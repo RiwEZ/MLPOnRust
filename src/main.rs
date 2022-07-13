@@ -1,20 +1,34 @@
 pub mod activator;
 pub mod loss;
 pub mod layer;
+pub mod utills;
 
 // Multilayer Perceptron
 #[derive(Debug)]
 pub struct Net {
-    layers: Vec<layer::Linear>,
+    pub layers: Vec<layer::Linear>,
 }
 
 impl Net {
     pub fn new(architecture: Vec<u64>) -> Net {
         let mut layers: Vec<layer::Linear> = vec![];
         for i in 1..architecture.len() {
-            layers.push(layer::Linear::new(architecture[i - 1], architecture[i], 1f64))
+            layers.push(
+                layer::Linear::new(
+                    architecture[i - 1], 
+                    architecture[i], 
+                    1f64, activator::sigmoid()))
         }
         Net {layers}
+    }
+
+    pub fn zero_grad(&mut self) {
+        for l in 0..self.layers.len() {
+            for i in 0..self.layers[l].grads.len() {
+                self.layers[l].grads[i] = 0.0;
+                self.layers[l].b_grads[i] = 0.0;
+            }
+        }
     }
 
     pub fn forward(&mut self, input: Vec<f64>) -> Vec<f64> {
@@ -30,7 +44,7 @@ impl Net {
     pub fn update(&mut self, lr: f64) {
         for l in 0..self.layers.len() {
             for j in 0..self.layers[l].w.len() {
-                self.layers[l].b[j] += lr * self.layers[l].b_grads[j]; // update each neuron bias
+                //self.layers[l].b[j] += lr * self.layers[l].b_grads[j]; // update each neuron bias
                 for i in 0..self.layers[l].w[j].len() {
                     self.layers[l].w[j][i] += lr * self.layers[l].grads[j] // update each weight
                 }
@@ -42,16 +56,29 @@ impl Net {
 fn main() {  
     let mut net = Net::new(vec![2, 2, 1]);
     let lr = 0.01;
+    let dataset = utills::xor_dataset();
     
-    for _ in 0..10000 {
-        let result = net.forward(vec![0.0, 1.0]);
-        let loss = loss::MSELoss::criterion(result, vec![1.0]);
-        loss.backward(&mut net.layers);
+    for j in 0..5000 {
+        let mut running_loss = 0.0;
 
-        net.update(lr);
+        for _ in 0..dataset.datas.len() {
+            let data = dataset.get_sample();
+            //println!("{:?}", data);
+            
+            net.zero_grad();
+            
+            let result = net.forward(data.inputs.clone());
+            let loss = loss::MSELoss::criterion(result, data.labels.clone());
+            loss.backward(&mut net.layers);
+            net.update(lr);
 
-        println!("{}", loss.item());
+            running_loss += loss.item();
+        }
+        println!("epoch: {}, loss: {}", j + 1, running_loss);
     }
+    
+    //println!("\n{:?}", net.forward(vec![0.0, 1.0])[0] >= 0.5);
+    //println!("\n{:?}", net.forward(vec![1.0, 1.0])[0] >= 0.5);
 
     println!("");
     for l in &net.layers {

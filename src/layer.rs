@@ -7,11 +7,12 @@ pub struct Linear {
     pub w: Vec<Vec<f64>>,
     pub b: Vec<f64>,
     pub grads: Vec<f64>,
-    pub b_grads: Vec<f64>
+    pub b_grads: Vec<f64>,
+    pub act: activator::ActivationContainer
 }
 
 impl Linear {
-    pub fn new(input_features: u64, output_features: u64, bias: f64) -> Linear {
+    pub fn new(input_features: u64, output_features: u64, bias: f64, act: activator::ActivationContainer) -> Linear {
         // initialize weights matrix
         let mut weights: Vec<Vec<f64>> = vec![];
         let mut outputs: Vec<f64> = vec![];
@@ -32,7 +33,7 @@ impl Linear {
             }
             weights.push(w)
         }
-        Linear { inputs: input_features, outputs, w: weights, b, grads, b_grads }
+        Linear { inputs: input_features, outputs, w: weights, b, grads, b_grads, act }
     }
 
     pub fn forward(&mut self, input: Vec<f64>) {
@@ -46,7 +47,7 @@ impl Linear {
             for i in 0..input.len() {
                 sum += self.w[j as usize][i] * input[i] + self.b[j]
             }
-            self.outputs[j] = activator::sigmoid(sum); // this could be more generic
+            self.outputs[j] = (self.act.func)(sum);
         }
     } 
 }
