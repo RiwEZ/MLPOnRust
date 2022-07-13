@@ -44,7 +44,7 @@ impl Net {
     pub fn update(&mut self, lr: f64) {
         for l in 0..self.layers.len() {
             for j in 0..self.layers[l].w.len() {
-                //self.layers[l].b[j] += lr * self.layers[l].b_grads[j]; // update each neuron bias
+                self.layers[l].b[j] += lr * self.layers[l].b_grads[j]; // update each neuron bias
                 for i in 0..self.layers[l].w[j].len() {
                     self.layers[l].w[j][i] += lr * self.layers[l].grads[j] // update each weight
                 }
@@ -55,21 +55,19 @@ impl Net {
 
 fn main() {  
     let mut net = Net::new(vec![2, 2, 1]);
-    let lr = 0.01;
+    let lr = 0.05;
     let dataset = utills::xor_dataset();
     
-    for j in 0..5000 {
+    for j in 0..1000 {
         let mut running_loss = 0.0;
 
-        for _ in 0..dataset.datas.len() {
-            let data = dataset.get_sample();
-            //println!("{:?}", data);
-            
+        for data in dataset.get_samples() {
             net.zero_grad();
             
             let result = net.forward(data.inputs.clone());
             let loss = loss::MSELoss::criterion(result, data.labels.clone());
             loss.backward(&mut net.layers);
+            
             net.update(lr);
 
             running_loss += loss.item();
@@ -77,12 +75,7 @@ fn main() {
         println!("epoch: {}, loss: {}", j + 1, running_loss);
     }
     
-    //println!("\n{:?}", net.forward(vec![0.0, 1.0])[0] >= 0.5);
-    //println!("\n{:?}", net.forward(vec![1.0, 1.0])[0] >= 0.5);
-
-    println!("");
     for l in &net.layers {
-        println!("{:?}", l);
-        println!("");
+        println!("\n{:?}", l);
     }
 }

@@ -1,5 +1,4 @@
 use crate::layer;
-use crate::activator;
 
 pub fn mse(output: f64, desired: f64) -> f64 {
     0.5 * (desired - output).powi(2)
@@ -37,7 +36,7 @@ impl MSELoss {
                     // compute grads
                     let delta =
                         mse_der(self.outputs[i], self.desired[i]) * 
-                        activator::sigmoid_der(layers[l].outputs[i]);
+                        (layers[l].act.der)(layers[l].outputs[i]);
 
                     layers[l].grads[i] = delta * layers[l - 1].outputs[i];
                     layers[l].b_grads[i] = delta;
@@ -52,7 +51,7 @@ impl MSELoss {
                 }
 
                 layers[l].grads[i] = delta *
-                    activator::sigmoid_der(layers[l].outputs[i]);
+                    (layers[l].act.der)(layers[l].outputs[i]);
                 layers[l].b_grads[i] = delta;
             }
         }

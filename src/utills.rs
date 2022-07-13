@@ -1,4 +1,4 @@
-use rand::Rng;
+use rand::{prelude::SliceRandom};
 
 pub struct DataSet {
     pub datas: Vec<Data>,
@@ -9,21 +9,17 @@ impl DataSet {
         DataSet {datas}
     }
 
-    pub fn get_sample(&self) -> Data {
-        let index = rand::thread_rng().gen_range(0..self.datas.len());
-        self.datas[index].clone()
+    pub fn get_samples(&self) -> Vec<Data> {
+        let mut shuffled_datas = self.datas.clone();
+        shuffled_datas.shuffle(&mut rand::thread_rng());
+        shuffled_datas
     }
 }
 #[derive(Debug)]
+#[derive(Clone)]
 pub struct Data {
     pub inputs: Vec<f64>,
     pub labels: Vec<f64>
-}
-
-impl Data {
-    pub fn clone(&self) -> Data {
-        Data {inputs: self.inputs.clone(), labels: self.labels.clone()}
-    }
 }
 
 pub fn xor_dataset() -> DataSet {

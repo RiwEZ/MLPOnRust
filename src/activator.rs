@@ -4,11 +4,11 @@ pub struct ActivationContainer {
     pub der: fn(f64) -> f64
 }
 
-pub fn sigmoid_f(input: f64) -> f64 {
+fn sigmoid_f(input: f64) -> f64 {
     1.0/(1.0 + (-input).exp())
 }
 
-pub fn sigmoid_der(input: f64) -> f64 {
+fn sigmoid_der(input: f64) -> f64 {
     sigmoid_f(input) * (1.0 - sigmoid_f(input))
 }
 
@@ -22,4 +22,23 @@ pub fn sigmoid_vec(input: &Vec<f64>) -> Vec<f64> {
         res.push(sigmoid_f(*x))
     }
     res
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_sigmoid_f() {
+        assert_eq!(sigmoid_f(1.0), 0.7310585786300048792512);
+        assert_eq!(sigmoid_f(-1.0), 0.2689414213699951207488);
+        assert_eq!(sigmoid_f(0.0), 0.5);
+    }
+
+    #[test]
+    fn test_sigmoid_der() {
+        assert_eq!(sigmoid_der(1.0), 0.1966119332414818525374);
+        assert_eq!(sigmoid_der(-1.0), 0.1966119332414818525374);
+        assert_eq!(sigmoid_der(0.0), 0.25);
+    }
 }
