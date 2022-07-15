@@ -24,6 +24,16 @@ pub fn sigmoid_vec(input: &Vec<f64>) -> Vec<f64> {
     res
 }
 
+pub fn linear() -> ActivationContainer {
+    fn l(input: f64) -> f64 {
+        input
+    }
+    fn l_der(_input: f64) -> f64 {
+        0.0   
+    }
+    ActivationContainer { func: l, der: l_der }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -40,5 +50,17 @@ mod tests {
         assert_eq!(sigmoid_der(1.0), 0.1966119332414818525374);
         assert_eq!(sigmoid_der(-1.0), 0.1966119332414818525374);
         assert_eq!(sigmoid_der(0.0), 0.25);
+    }
+
+    #[test]
+    fn test_sidmoid_container() {
+        let act = sigmoid();
+
+        assert_eq!((act.func)(1.0), 0.7310585786300048792512);
+        assert_eq!((act.func)(-1.0), 0.2689414213699951207488);
+        assert_eq!((act.func)(0.0), 0.5);
+        assert_eq!((act.der)(1.0), 0.1966119332414818525374);
+        assert_eq!((act.der)(-1.0), 0.1966119332414818525374);
+        assert_eq!((act.der)(0.0), 0.25);
     }
 }
