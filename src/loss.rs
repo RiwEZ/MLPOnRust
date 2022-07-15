@@ -1,11 +1,11 @@
 use crate::layer;
 
 pub fn mse(output: f64, desired: f64) -> f64 {
-    0.5 * (desired - output).powi(2)
+    0.5 * (output - desired).powi(2)
 }
 
 pub fn mse_der(output: f64, desired: f64) -> f64 {
-    desired - output
+    output - desired
 }
 
 pub struct MSELoss {
@@ -32,27 +32,48 @@ impl MSELoss {
         for l in (0..layers.len()).rev() {
             // output layer 
             if l == layers.len() - 1 {
-                for i in 0..(layers[l].grads.len() as usize) {
+                for j in 0..layers[l].outputs.len() {
                     // compute grads
-                    let delta =
-                        mse_der(self.outputs[i], self.desired[i]) * 
-                        (layers[l].act.der)(layers[l].outputs[i]);
-
-                    layers[l].grads[i] = delta * layers[l - 1].outputs[i];
-                    layers[l].b_grads[i] = delta;
+                    let local_grad =
+                        mse_der(self.outputs[j], self.desired[j]) * 
+                        (layers[l].act.der)(layers[l].outputs[j]);
+                    
+                    // set grads for each weight
+                    for k in 0..(layers[l - 1].outputs.len()) {
+                        layers[l].grads[j][k] = local_grad * (layers[l - 1].act.func)(layers[l - 1].outputs[k]);
+                    }
+                    //println!("{}, {}: {:?}", l, j, layers[l].grads[j]);
+                    layers[l].local_grads[j] = local_grad;
                 }
                 continue;
             }
             // hidden layer
-            for i in 0..layers[l].grads.len() {
-                let mut delta = 0f64;
-                for k in 0..layers[l + 1].grads.len() {
-                    delta += layers[l + 1].grads[k] * layers[l + 1].w[k][i];
+            for j in 0..layers[l].outputs.len() {
+                let mut local_grad = 0f64;
+                // calculate local_grad based on previous local_grad
+                for i in 0..layers[l + 1].w.len() {
+                    for k in 0..layers[l + 1].w[i].len() {
+                        local_grad += layers[l + 1].w[i][k] * layers[l + 1].local_grads[i];
+                    }
                 }
 
-                layers[l].grads[i] = delta *
-                    (layers[l].act.der)(layers[l].outputs[i]);
-                layers[l].b_grads[i] = delta;
+                local_grad = (layers[l].act.der)(layers[l].outputs[j]) * local_grad; 
+                
+                if l == 0 {
+                    for k in 0..layers[l].inputs.len() {
+                        layers[l].grads[j][k] = layers[l].inputs[k] * local_grad;
+                    }
+                }
+                else {
+                    for k in 0..layers[l - 1].outputs.len() {
+                        layers[l].grads[j][k] = 
+                            (layers[l].act.func)(layers[l - 1].outputs[k]) * // a(l - 1)
+                            local_grad;
+                    }
+                }
+                
+                //println!("{}, {}: {:?}", l, j, layers[l].grads[j]);
+                layers[l].local_grads[j] = local_grad;
             }
         }
     }

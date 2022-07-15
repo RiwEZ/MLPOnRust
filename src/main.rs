@@ -58,7 +58,7 @@ fn main() {
     let lr = 0.1;
     let dataset = utills::xor_dataset();
 
-    for j in 0..1 {
+    for j in 0..5000 {
         let mut running_loss = 0.0;
 
         for data in dataset.get_samples() {
@@ -74,6 +74,11 @@ fn main() {
         }
         println!("epoch: {}, loss: {}", j + 1, running_loss);
     }
+    
+    println!("\n{}", (net.forward(vec![0.0, 0.0])[0] > 0.5) );
+    println!("\n{}", (net.forward(vec![1.0, 0.0])[0] > 0.5) );
+    println!("\n{}", (net.forward(vec![0.0, 1.0])[0] > 0.5) );
+    println!("\n{}", (net.forward(vec![1.0, 1.0])[0] > 0.5) );
     
     for l in &net.layers {
         println!("\n{:?}", l);
