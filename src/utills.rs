@@ -1,4 +1,4 @@
-use rand::{prelude::SliceRandom};
+use rand::prelude::SliceRandom;
 
 pub struct DataSet {
     pub datas: Vec<Data>,

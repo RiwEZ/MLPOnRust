@@ -42,10 +42,6 @@ impl Linear {
         Linear { inputs, outputs, w: weights, b, grads, local_grads: b_grads, act }
     }
 
-    pub fn set_w(&mut self, j: usize, i: usize, value: f64) {
-        self.w[j][i] = value;
-    }
-
     pub fn forward(&mut self, inputs: Vec<f64>) -> Vec<f64> {
         if inputs.len() != self.inputs.len() {
             panic!("forward: input size is wrong");
@@ -63,6 +59,24 @@ impl Linear {
         self.inputs = inputs;
         result
     } 
+
+    pub fn update(&mut self, lr: f64) {
+        for j in 0..self.w.len() {
+            self.b[j] -= lr * self.local_grads[j]; // update each neuron bias
+            for i in 0..self.w[j].len() {
+                self.w[j][i] -= lr * self.grads[j][i]; // update each weights
+            }
+        }
+    }
+
+    pub fn zero_grad(&mut self) {
+        for j in 0..self.outputs.len() {
+            self.local_grads[j] = 0.0;
+            for i in 0..self.grads[j].len() {
+                self.grads[j][i] = 0.0;
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -90,7 +104,7 @@ mod tests {
         
         for j in 0..linear.w.len() {
             for i in 0..linear.w[j].len() {
-                linear.set_w(j, i, 1.0);
+                linear.w[j][i] = 1.0;
             }
         }
         
@@ -104,7 +118,7 @@ mod tests {
         
         for j in 0..linear.w.len() {
             for i in 0..linear.w[j].len() {
-                linear.set_w(j, i, (j as f64) + 1.0);
+                linear.w[j][i] =  (j as f64) + 1.0;
             }
         }
         let result = linear.forward(vec![0.0, 1.0]);
