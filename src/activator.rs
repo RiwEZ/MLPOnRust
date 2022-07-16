@@ -1,7 +1,8 @@
 #[derive(Debug)]
 pub struct ActivationContainer {
     pub func: fn(f64) -> f64,
-    pub der: fn(f64) -> f64
+    pub der: fn(f64) -> f64,
+    pub name: String
 }
 
 fn sigmoid_f(input: f64) -> f64 {
@@ -13,7 +14,7 @@ fn sigmoid_der(input: f64) -> f64 {
 }
 
 pub fn sigmoid() -> ActivationContainer {
-    ActivationContainer { func: sigmoid_f, der: sigmoid_der }
+    ActivationContainer { func: sigmoid_f, der: sigmoid_der, name: "sigmoid".to_string() }
 }
 
 pub fn sigmoid_vec(input: &Vec<f64>) -> Vec<f64> {
@@ -31,7 +32,7 @@ pub fn linear() -> ActivationContainer {
     fn l_der(_input: f64) -> f64 {
         0.0   
     }
-    ActivationContainer { func: l, der: l_der }
+    ActivationContainer { func: l, der: l_der, name: "linear".to_string() }
 }
 
 #[cfg(test)]

@@ -7,6 +7,10 @@ pub struct Net {
 }
 
 impl Net {
+    pub fn from_layers(layers: Vec<layer::Linear>) -> Net {
+        Net { layers }
+    }
+
     pub fn new(architecture: Vec<u64>) -> Net {
         let mut layers: Vec<layer::Linear> = vec![];
         for i in 1..architecture.len() {

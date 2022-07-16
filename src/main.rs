@@ -3,9 +3,11 @@ pub mod loss;
 pub mod layer;
 pub mod utills;
 pub mod model;
+pub mod io;
 use plotters::prelude::*;
+use std::error::Error;
 
-fn draw_loss(loss_vec: Vec<f64>) -> Result<(), Box<dyn std::error::Error>> {
+fn draw_loss(loss_vec: Vec<f64>) -> Result<(), Box<dyn Error>> {
     // plotting loss
     let root = BitMapBackend::new("img/0.png", (640, 480))
         .into_drawing_area();
@@ -35,7 +37,8 @@ fn draw_loss(loss_vec: Vec<f64>) -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {  
+fn main() -> Result<(), Box<dyn Error>> {
+    /*
     let mut net = model::Net::new(vec![2, 2, 1]);
     let lr = 0.1;
     let dataset = utills::xor_dataset();
@@ -65,6 +68,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("\n{}", (net.forward(vec![0.0, 1.0])[0] > 0.5) );
     println!("\n{}", (net.forward(vec![1.0, 1.0])[0] > 0.5) );  
 
+    io::save(&net.layers, "models/xor.json".to_string())?;
     draw_loss(loss_vec)?;
+    */
+
+    let mut net = io::load("models/xor.json".to_string())?;
+    println!("\n{}", (net.forward(vec![0.0, 0.0])[0] > 0.5) );
+    println!("\n{}", (net.forward(vec![1.0, 0.0])[0] > 0.5) );
+    println!("\n{}", (net.forward(vec![0.0, 1.0])[0] > 0.5) );
+    println!("\n{}", (net.forward(vec![1.0, 1.0])[0] > 0.5) );  
+    
     Ok(())
 }
