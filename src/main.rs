@@ -38,17 +38,18 @@ fn draw_loss(loss_vec: Vec<f64>) -> Result<(), Box<dyn Error>> {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    /*
     let mut net = model::Net::new(vec![2, 2, 1]);
     let lr = 0.1;
+
     let dataset = utills::xor_dataset();
+
     let mut loss = loss::MSELoss::new();
     let mut loss_vec: Vec<f64> = vec![];
 
     for _ in 0..5000 {
         let mut running_loss = 0.0;
 
-        for data in dataset.get_samples() {
+        for data in dataset.get_shuffled() {
             net.zero_grad();
             
             let result = net.forward(data.inputs.clone());
@@ -68,15 +69,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("\n{}", (net.forward(vec![0.0, 1.0])[0] > 0.5) );
     println!("\n{}", (net.forward(vec![1.0, 1.0])[0] > 0.5) );  
 
-    io::save(&net.layers, "models/xor.json".to_string())?;
+    //io::save(&net.layers, "models/xor.json".to_string())?;
     draw_loss(loss_vec)?;
-    */
 
+    /* 
     let mut net = io::load("models/xor.json".to_string())?;
     println!("\n{}", (net.forward(vec![0.0, 0.0])[0] > 0.5) );
     println!("\n{}", (net.forward(vec![1.0, 0.0])[0] > 0.5) );
     println!("\n{}", (net.forward(vec![0.0, 1.0])[0] > 0.5) );
     println!("\n{}", (net.forward(vec![1.0, 1.0])[0] > 0.5) );  
-    
+    */
+
     Ok(())
 }

@@ -24,10 +24,15 @@ pub fn save(layers: &Vec<layer::Linear>, path: String) -> Result<(), Box<dyn Err
     Ok(())
 }
 
-pub fn load(path: String) -> Result<model::Net, Box<dyn Error>> {
+pub fn read_file(path: String) -> Result<String, Box<dyn Error>> {
     let mut file = File::open(path)?;
     let mut contents = String::new();
     file.read_to_string(&mut contents)?;
+    Ok(contents)
+}
+
+pub fn load(path: String) -> Result<model::Net, Box<dyn Error>> {
+    let contents = read_file(path)?;
 
     let json: Value = serde_json::from_str(&contents)?;
     let mut layers: Vec<layer::Linear> = vec![];

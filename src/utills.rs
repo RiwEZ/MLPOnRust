@@ -1,25 +1,62 @@
 use rand::prelude::SliceRandom;
+use serde::Deserialize;
+use std::error::Error;
 
+#[derive(Debug)]
+#[derive(Clone)]
+pub struct Data {
+    pub inputs: Vec<f64>,
+    pub labels: Vec<f64>
+}
 pub struct DataSet {
-    pub datas: Vec<Data>,
+    datas: Vec<Data>,
 }
 
 impl DataSet {
     pub fn new(datas: Vec<Data>) -> DataSet {
         DataSet {datas}
     }
+    
+    pub fn cross_valid_set(&self, percent: f64) -> Vec<(DataSet, DataSet)> {
+        if percent < 0.0 && percent > 1.0 {
+            panic!("argument percent must be in range [0, 1]")
+        }
+        let k = (percent * (self.datas.len() as f64)).ceil() as usize; // fold size
+        let n = (self.datas.len() as f64 / k as f64).ceil() as usize; // number of folds
+        let mut set: Vec<(DataSet, DataSet)> = vec![]; 
 
-    pub fn get_samples(&self) -> Vec<Data> {
+        let mut curr: usize = 0;
+        
+        for _ in 0..n {
+            let r_pt: usize = if curr + k > self.datas.len() {self.datas.len()} else {curr + k};
+
+            let validation_set: Vec<Data> = self.datas[curr..r_pt].to_vec();
+            let training_set: Vec<Data> = 
+                if curr > 0 {
+                    let mut temp = self.datas[0..curr].to_vec();
+                    temp.append(&mut self.datas[r_pt..self.datas.len()].to_vec());
+                    temp
+                }
+                else {
+                    self.datas[r_pt..self.datas.len()].to_vec()
+                };
+
+            println!("{}, {}", curr, r_pt);
+            set.push((DataSet::new(training_set), DataSet::new(validation_set)));
+            curr += k
+        }
+        set
+    }
+    
+    pub fn get_datas(&self) -> Vec<Data> {
+        self.datas.clone()
+    }
+
+    pub fn get_shuffled(&self) -> Vec<Data> {
         let mut shuffled_datas = self.datas.clone();
         shuffled_datas.shuffle(&mut rand::thread_rng());
         shuffled_datas
     }
-}
-#[derive(Debug)]
-#[derive(Clone)]
-pub struct Data {
-    pub inputs: Vec<f64>,
-    pub labels: Vec<f64>
 }
 
 pub fn xor_dataset() -> DataSet {
@@ -31,4 +68,55 @@ pub fn xor_dataset() -> DataSet {
     }
     
     DataSet::new(datas)
+}
+
+pub fn flood_dataset() -> Result<DataSet, Box<dyn Error>> {    
+    #[derive(Debug, Deserialize)]
+    struct Record {
+        s1_t3: u32,
+        s1_t2: u32,
+        s1_t1: u32,
+        s1_t0: u32,
+        s2_t3: u32,
+        s2_t2: u32,
+        s2_t1: u32,
+        s2_t0: u32,
+        t7: u32
+    }
+
+    let mut datas: Vec<Data> = vec![];
+    let mut reader = csv::Reader::from_path("data/flood_dataset.csv")?;
+    for record in reader.deserialize() {
+        let record: Record = record?;
+        let mut inputs: Vec<f64> = vec![];
+        // station 1
+        inputs.push(f64::from(record.s1_t3));
+        inputs.push(f64::from(record.s1_t2));
+        inputs.push(f64::from(record.s1_t1));
+        inputs.push(f64::from(record.s1_t0));
+        // station 2
+        inputs.push(f64::from(record.s2_t3));
+        inputs.push(f64::from(record.s2_t2));
+        inputs.push(f64::from(record.s2_t1));
+        inputs.push(f64::from(record.s2_t0));
+
+        let labels: Vec<f64> = vec![f64::from(record.t7)];
+        datas.push(Data {inputs, labels});
+    }
+    Ok(DataSet::new(datas))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn temp_test() -> Result<(), Box<dyn Error>> {
+        let dt = flood_dataset()?;
+        dt.cross_valid_set(0.1);
+
+        //println!("\n{:?}", dt.get_samples());
+        //println!("\n{:?}", dt.validation_set());
+        Ok(())
+    }
 }
