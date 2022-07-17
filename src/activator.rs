@@ -5,34 +5,39 @@ pub struct ActivationContainer {
     pub name: String
 }
 
-fn sigmoid_f(input: f64) -> f64 {
-    1.0/(1.0 + (-input).exp())
-}
-
-fn sigmoid_der(input: f64) -> f64 {
-    sigmoid_f(input) * (1.0 - sigmoid_f(input))
-}
-
 pub fn sigmoid() -> ActivationContainer {
-    ActivationContainer { func: sigmoid_f, der: sigmoid_der, name: "sigmoid".to_string() }
+    fn func(input: f64) -> f64 {
+        1.0/(1.0 + (-input).exp())
+    }
+    fn der(input: f64) -> f64 {
+        func(input) * (1.0 - func(input))
+    }
+    ActivationContainer { func, der, name: "sigmoid".to_string() }
 }
 
-pub fn sigmoid_vec(input: &Vec<f64>) -> Vec<f64> {
-    let mut res: Vec<f64> = vec![];
-    for x in input {
-        res.push(sigmoid_f(*x))
+pub fn relu() -> ActivationContainer {
+    fn func(input: f64) -> f64 {
+        return f64::max(0.0, input);
     }
-    res
+    fn der(input: f64) -> f64 {
+        if input > 0.0 {
+            return 1.0
+        }
+        else {
+            return 0.0
+        }
+    } 
+    ActivationContainer { func, der, name: "relu".to_string() }
 }
 
 pub fn linear() -> ActivationContainer {
-    fn l(input: f64) -> f64 {
+    fn func(input: f64) -> f64 {
         input
     }
-    fn l_der(_input: f64) -> f64 {
+    fn der(_input: f64) -> f64 {
         0.0   
     }
-    ActivationContainer { func: l, der: l_der, name: "linear".to_string() }
+    ActivationContainer { func, der, name: "linear".to_string() }
 }
 
 #[cfg(test)]
@@ -40,21 +45,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_sigmoid_f() {
-        assert_eq!(sigmoid_f(1.0), 0.7310585786300048792512);
-        assert_eq!(sigmoid_f(-1.0), 0.2689414213699951207488);
-        assert_eq!(sigmoid_f(0.0), 0.5);
-    }
-
-    #[test]
-    fn test_sigmoid_der() {
-        assert_eq!(sigmoid_der(1.0), 0.1966119332414818525374);
-        assert_eq!(sigmoid_der(-1.0), 0.1966119332414818525374);
-        assert_eq!(sigmoid_der(0.0), 0.25);
-    }
-
-    #[test]
-    fn test_sidmoid_container() {
+    fn test_sigmoid() {
         let act = sigmoid();
 
         assert_eq!((act.func)(1.0), 0.7310585786300048792512);
@@ -63,5 +54,15 @@ mod tests {
         assert_eq!((act.der)(1.0), 0.1966119332414818525374);
         assert_eq!((act.der)(-1.0), 0.1966119332414818525374);
         assert_eq!((act.der)(0.0), 0.25);
+    }
+    
+    #[test]
+    fn test_relu() {
+        let act = relu();
+        
+        assert_eq!((act.func)(-1.0), 0.0);
+        assert_eq!((act.func)(20.0), 20.0);
+        assert_eq!((act.der)(-1.0), 0.0);
+        assert_eq!((act.der)(20.0), 1.0);
     }
 }
