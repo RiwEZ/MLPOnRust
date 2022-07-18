@@ -7,9 +7,9 @@ pub mod io;
 use plotters::prelude::*;
 use std::error::Error;
 
-fn draw_loss(loss_vec: Vec<f64>) -> Result<(), Box<dyn Error>> {
+fn draw_loss(loss_vec: Vec<f64>, path: String) -> Result<(), Box<dyn Error>> {
     // plotting loss
-    let root = BitMapBackend::new("img/0.png", (640, 480))
+    let root = BitMapBackend::new(&path, (640, 480))
         .into_drawing_area();
     root.fill(&WHITE)?;
     let mut chart = ChartBuilder::on(&root)
@@ -50,13 +50,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         let mut running_loss = 0.0;
 
         for data in dataset.get_shuffled() {
-            net.zero_grad();
-            
             let result = net.forward(data.inputs.clone());
             loss.criterion(result, data.labels.clone());
             loss.backward(&mut net.layers);
             
-            net.update(lr);
+            net.update(lr, 1.0);
 
             running_loss += loss.item();
         }
@@ -70,7 +68,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("\n{}", (net.forward(vec![1.0, 1.0])[0] > 0.5) );  
 
     //io::save(&net.layers, "models/xor.json".to_string())?;
-    draw_loss(loss_vec)?;
+    draw_loss(loss_vec, "img/1.png".to_string())?;
 
     /* 
     let mut net = io::load("models/xor.json".to_string())?;

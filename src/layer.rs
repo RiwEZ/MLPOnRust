@@ -7,7 +7,9 @@ pub struct Linear {
     pub w: Vec<Vec<f64>>,
     pub b: Vec<f64>,
     pub grads: Vec<Vec<f64>>,
+    pub prev_grads: Vec<Vec<f64>>,
     pub local_grads: Vec<f64>,
+    pub prev_local_grads: Vec<f64>,
     pub act: activator::ActivationContainer
 }
 
@@ -18,12 +20,15 @@ impl Linear {
         let mut inputs: Vec<f64> = vec![];
         let mut outputs: Vec<f64> = vec![];
         let mut grads: Vec<Vec<f64>> = vec![];
-        let mut b_grads: Vec<f64> = vec![];
+        let mut local_grads: Vec<f64> = vec![];
+        let mut prev_grads: Vec<Vec<f64>> = vec![];
+        let mut prev_local_grads: Vec<f64> = vec![];
         let mut b: Vec<f64> = vec![];
 
         for _ in 0..output_features {
             outputs.push(0.0);
-            b_grads.push(0.0);
+            local_grads.push(0.0);
+            prev_local_grads.push(0.0);
             b.push(bias);           
 
             let mut w: Vec<f64> = vec![];
@@ -37,9 +42,10 @@ impl Linear {
                 w.push(2f64 * rand::random::<f64>() - 1f64);
             }
             weights.push(w);
-            grads.push(g);
+            grads.push(g.clone());
+            prev_grads.push(g);
         }
-        Linear { inputs, outputs, w: weights, b, grads, local_grads: b_grads, act }
+        Linear { inputs, outputs, w: weights, b, grads, prev_grads, local_grads, prev_local_grads, act }
     }
 
     pub fn forward(&mut self, inputs: Vec<f64>) -> Vec<f64> {
@@ -60,11 +66,11 @@ impl Linear {
         result
     } 
 
-    pub fn update(&mut self, lr: f64) {
+    pub fn update(&mut self, lr: f64, momentum: f64) {
         for j in 0..self.w.len() {
-            self.b[j] -= lr * self.local_grads[j]; // update each neuron bias
+            self.b[j] -= momentum * self.prev_local_grads[j] + lr * self.local_grads[j]; // update each neuron bias
             for i in 0..self.w[j].len() {
-                self.w[j][i] -= lr * self.grads[j][i]; // update each weights
+                self.w[j][i] -= momentum * self.prev_grads[j][i] + lr * self.grads[j][i]; // update each weights
             }
         }
     }
@@ -94,8 +100,11 @@ mod tests {
         assert_eq!(linear.b.len(), 3);
 
         assert_eq!(linear.grads.len(), 3);
+        assert_eq!(linear.prev_grads.len(), 3);
         assert_eq!(linear.grads[0].len(), 2);
+        assert_eq!(linear.prev_grads[0].len(), 2);
         assert_eq!(linear.local_grads.len(), 3);
+        assert_eq!(linear.prev_local_grads.len(), 3);
     }
 
     #[test]

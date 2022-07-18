@@ -37,9 +37,9 @@ impl Net {
         result
     }
 
-    pub fn update(&mut self, lr: f64) {
+    pub fn update(&mut self, lr: f64, momentum: f64) {
         for l in 0..self.layers.len() {
-            self.layers[l].update(lr);
+            self.layers[l].update(lr, momentum);
         }
     }
 }

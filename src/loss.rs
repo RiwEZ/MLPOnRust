@@ -46,9 +46,11 @@ impl MSELoss {
                     let local_grad =
                         MSELoss::der(self.outputs[j], self.desired[j]) * 
                         (layers[l].act.der)(layers[l].outputs[j]);
-
+                    
+                    layers[l].prev_local_grads = layers[l].local_grads.clone(); // copied previous grad before update
                     layers[l].local_grads[j] = local_grad;
                     
+                    layers[l].prev_grads = layers[l].grads.clone();
                     // set grads for each weight
                     for k in 0..(layers[l - 1].outputs.len()) {
                         layers[l].grads[j][k] = 
@@ -68,8 +70,12 @@ impl MSELoss {
                     }
                 }
                 local_grad = (layers[l].act.der)(layers[l].outputs[j]) * local_grad; 
+
+                layers[l].prev_local_grads = layers[l].local_grads.clone(); // copied previous grad before update
                 layers[l].local_grads[j] = local_grad;
                 
+
+                layers[l].prev_grads = layers[l].grads.clone();
                 // set grads for each weight
                 if l == 0 {
                     for k in 0..layers[l].inputs.len() {
