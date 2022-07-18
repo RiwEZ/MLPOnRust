@@ -1,4 +1,3 @@
-use crate::layer;
 use crate::model;
 use crate::activator;
 use serde_json::{json, Value, to_writer_pretty};
@@ -6,7 +5,7 @@ use std::fs::File;
 use std::error::Error;
 use std::io::Read;
 
-pub fn save(layers: &Vec<layer::Linear>, path: String) -> Result<(), Box<dyn Error>> {
+pub fn save(layers: &Vec<model::Layer>, path: String) -> Result<(), Box<dyn Error>> {
     let mut json: Vec<Value>= vec![];
 
     for l in layers {
@@ -35,11 +34,11 @@ pub fn load(path: String) -> Result<model::Net, Box<dyn Error>> {
     let contents = read_file(path)?;
 
     let json: Value = serde_json::from_str(&contents)?;
-    let mut layers: Vec<layer::Linear> = vec![];
+    let mut layers: Vec<model::Layer> = vec![];
 
     for l in json.as_array().unwrap() {
         // default layer activation is simeple linear f(x) = x
-        let mut layer = layer::Linear::new(
+        let mut layer = model::Layer::new(
                 l["inputs"].as_u64().unwrap(), 
                 l["outputs"].as_u64().unwrap(), 
                 0.0, activator::linear());

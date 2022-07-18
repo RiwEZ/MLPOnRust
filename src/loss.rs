@@ -37,7 +37,7 @@ impl MSELoss {
         self.desired = desired;
     }
     
-    pub fn backward(&self, layers: &mut Vec<layer::Linear>) {
+    pub fn backward(&self, layers: &mut Vec<layer::Layer>) {
         for l in (0..layers.len()).rev() {
             // output layer 
             if l == layers.len() - 1 {
