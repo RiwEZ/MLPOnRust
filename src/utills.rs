@@ -2,8 +2,12 @@ use rand::prelude::SliceRandom;
 use serde::Deserialize;
 use std::error::Error;
 use plotters::prelude::*;
+use crate::io::read_lines;
 
-pub fn draw_loss(loss_vec: Vec<f64>, path: String) -> Result<(), Box<dyn Error>> {
+pub fn draw_loss(x_vec: Vec<f64>, loss_vec: Vec<f64>, path: String) -> Result<(), Box<dyn Error>> {
+    let max_loss = loss_vec.iter().fold(0.0f64, |max, &val| if val > max {val} else {max});
+    let max_x = x_vec.iter().fold(0.0f64, |max, &val| if val > max {val} else {max});
+
     // plotting loss
     let root = BitMapBackend::new(&path, (1024, 768))
         .into_drawing_area();
@@ -12,14 +16,14 @@ pub fn draw_loss(loss_vec: Vec<f64>, path: String) -> Result<(), Box<dyn Error>>
         .caption("loss", ("san-serif", 50).into_font())
         .margin(20)
         .x_label_area_size(30)
-        .y_label_area_size(30)
-        .build_cartesian_2d(0i64..loss_vec.len() as i64, 0f64..1f64)?;
+        .y_label_area_size(50)
+        .build_cartesian_2d(0f64..max_x, 0f64..max_loss)?;
     
     chart.configure_mesh().draw()?;
 
-    let mut i: i64 = -1;
+    let mut i: usize = 0;
     chart
-        .draw_series(LineSeries::new(loss_vec.into_iter().map(|x| {i += 1; (i, x)}), &RED))?
+        .draw_series(LineSeries::new(loss_vec.into_iter().map(|x| {i += 1; (x_vec[i - 1], x)}), &RED))?
         .label("loss")
         .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
 
@@ -72,7 +76,6 @@ impl DataSet {
                     self.datas[r_pt..self.datas.len()].to_vec()
                 };
 
-            println!("{}, {}", curr, r_pt);
             set.push((DataSet::new(training_set), DataSet::new(validation_set)));
             curr += k
         }
@@ -101,18 +104,25 @@ pub fn xor_dataset() -> DataSet {
     DataSet::new(datas)
 }
 
-pub fn flood_dataset() -> Result<DataSet, Box<dyn Error>> {    
+pub fn flood_dataset() -> Result<DataSet, Box<dyn Error>> {
+    fn standard_score(input: f64) -> f64 {
+        let std = 120.451671938513000;
+        let mean = 340.303963198868000;
+        (input-mean)/std
+    }
+
+    
     #[derive(Debug, Deserialize)]
     struct Record {
-        s1_t3: u32,
-        s1_t2: u32,
-        s1_t1: u32,
-        s1_t0: u32,
-        s2_t3: u32,
-        s2_t2: u32,
-        s2_t1: u32,
-        s2_t0: u32,
-        t7: u32
+        s1_t3: f64,
+        s1_t2: f64,
+        s1_t1: f64,
+        s1_t0: f64,
+        s2_t3: f64,
+        s2_t2: f64,
+        s2_t1: f64,
+        s2_t0: f64,
+        t7: f64
     }
 
     let mut datas: Vec<Data> = vec![];
@@ -121,17 +131,36 @@ pub fn flood_dataset() -> Result<DataSet, Box<dyn Error>> {
         let record: Record = record?;
         let mut inputs: Vec<f64> = vec![];
         // station 1
-        inputs.push(f64::from(record.s1_t3));
-        inputs.push(f64::from(record.s1_t2));
-        inputs.push(f64::from(record.s1_t1));
-        inputs.push(f64::from(record.s1_t0));
+        inputs.push(standard_score(record.s1_t3));
+        inputs.push(standard_score(record.s1_t2));
+        inputs.push(standard_score(record.s1_t1));
+        inputs.push(standard_score(record.s1_t0));
         // station 2
-        inputs.push(f64::from(record.s2_t3));
-        inputs.push(f64::from(record.s2_t2));
-        inputs.push(f64::from(record.s2_t1));
-        inputs.push(f64::from(record.s2_t0));
+        inputs.push(standard_score(record.s2_t3));
+        inputs.push(standard_score(record.s2_t2));
+        inputs.push(standard_score(record.s2_t1));
+        inputs.push(standard_score(record.s2_t0));
 
-        let labels: Vec<f64> = vec![f64::from(record.t7)];
+        let labels: Vec<f64> = vec![f64::from(standard_score(record.t7))];
+        datas.push(Data {inputs, labels});
+    }
+    Ok(DataSet::new(datas))
+}
+
+pub fn cross_dataset() -> Result<DataSet, Box<dyn Error>> {
+    let mut datas: Vec<Data> = vec![];
+    let mut lines = read_lines("data/cross.pat")?;
+    while let (Some(_), Some(Ok(l1)), Some(Ok(l2))) = (lines.next(), lines.next(), lines.next()) {
+        let mut inputs: Vec<f64> = vec![];
+        let mut labels: Vec<f64> = vec![];
+        for w in l1.split(" ") {
+            let v: f64 = w.parse().unwrap();
+            inputs.push(v);
+        }   
+        for w in l2.split(" ") {
+            let v: f64 = w.parse().unwrap();
+            labels.push(v);
+        }   
         datas.push(Data {inputs, labels});
     }
     Ok(DataSet::new(datas))
@@ -143,11 +172,17 @@ mod tests {
 
     #[test]
     fn temp_test() -> Result<(), Box<dyn Error>> {
-        let dt = flood_dataset()?;
+        /*         let dt = flood_dataset()?;
         dt.cross_valid_set(0.1);
 
-        //println!("\n{:?}", dt.get_samples());
+        //println!("\n{:?}", dt.get_datas());
         //println!("\n{:?}", dt.validation_set());
+        */
+
+        if let Ok(dt) = cross_dataset() {
+            println!("{:?}", dt.get_datas());
+        }
+
         Ok(())
     }
 }

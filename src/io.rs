@@ -4,6 +4,8 @@ use serde_json::{json, Value, to_writer_pretty};
 use std::fs::File;
 use std::error::Error;
 use std::io::Read;
+use std::io::{self, BufRead};
+use std::path::Path;
 
 pub fn save(layers: &Vec<model::Layer>, path: String) -> Result<(), Box<dyn Error>> {
     let mut json: Vec<Value>= vec![];
@@ -21,6 +23,12 @@ pub fn save(layers: &Vec<model::Layer>, path: String) -> Result<(), Box<dyn Erro
     let file = File::create(path)?;
     to_writer_pretty(&file, &result)?;
     Ok(())
+}
+
+pub fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
+where P: AsRef<Path>, {
+    let file = File::open(filename)?;
+    Ok(io::BufReader::new(file).lines())
 }
 
 pub fn read_file(path: String) -> Result<String, Box<dyn Error>> {
@@ -46,6 +54,7 @@ pub fn load(path: String) -> Result<model::Net, Box<dyn Error>> {
         if l["act"] == "sigmoid" {
             layer.act = activator::sigmoid();
         }
+
         // setting weights and bias
         let w = l["w"].as_array().unwrap();
         let b = l["b"].as_array().unwrap();

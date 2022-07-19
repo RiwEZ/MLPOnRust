@@ -35,7 +35,7 @@ pub fn linear() -> ActivationContainer {
         input
     }
     fn der(_input: f64) -> f64 {
-        0.0   
+        1.0 
     }
     ActivationContainer { func, der, name: "linear".to_string() }
 }

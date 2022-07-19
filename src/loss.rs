@@ -1,4 +1,4 @@
-use crate::layer;
+use crate::model;
 
 pub struct MSELoss {
     outputs: Vec<f64>,
@@ -37,7 +37,7 @@ impl MSELoss {
         self.desired = desired;
     }
     
-    pub fn backward(&self, layers: &mut Vec<layer::Layer>) {
+    pub fn backward(&self, layers: &mut Vec<model::Layer>) {
         for l in (0..layers.len()).rev() {
             // output layer 
             if l == layers.len() - 1 {
