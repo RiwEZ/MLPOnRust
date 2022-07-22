@@ -26,20 +26,22 @@ pub fn save(layers: &Vec<model::Layer>, path: String) -> Result<(), Box<dyn Erro
 }
 
 pub fn read_lines<P>(filename: P) -> io::Result<io::Lines<io::BufReader<File>>>
-where P: AsRef<Path>, {
+where P: AsRef<Path> {
     let file = File::open(filename)?;
     Ok(io::BufReader::new(file).lines())
 }
 
-pub fn read_file(path: String) -> Result<String, Box<dyn Error>> {
-    let mut file = File::open(path)?;
+pub fn read_file<P>(filename: P) -> Result<String, Box<dyn Error>>
+where P: AsRef<Path> {
+    let mut file = File::open(filename)?;
     let mut contents = String::new();
     file.read_to_string(&mut contents)?;
     Ok(contents)
 }
 
-pub fn load(path: String) -> Result<model::Net, Box<dyn Error>> {
-    let contents = read_file(path)?;
+pub fn load <P>(filename: P) -> Result<model::Net, Box<dyn Error>>
+where P: AsRef<Path> {
+    let contents = read_file(filename)?;
 
     let json: Value = serde_json::from_str(&contents)?;
     let mut layers: Vec<model::Layer> = vec![];
@@ -82,7 +84,7 @@ mod tests {
         let net = model::Net::new(vec![2, 2, 2]);
         save(& net.layers, "models/xor.json".to_string())?;
         */
-        load("models/xor.json".to_string())?;
+        load("models/xor.json")?;
         Ok(())
     }
 }

@@ -1,44 +1,9 @@
+use crate::io::read_lines;
+use std::error::Error;
 use rand::prelude::SliceRandom;
 use serde::Deserialize;
-use std::error::Error;
-use plotters::prelude::*;
-use crate::io::read_lines;
 
-pub fn draw_loss(x_vec: Vec<f64>, loss_vec: Vec<f64>, path: String) -> Result<(), Box<dyn Error>> {
-    let max_loss = loss_vec.iter().fold(0.0f64, |max, &val| if val > max {val} else {max});
-    let max_x = x_vec.iter().fold(0.0f64, |max, &val| if val > max {val} else {max});
-
-    // plotting loss
-    let root = BitMapBackend::new(&path, (1024, 768))
-        .into_drawing_area();
-    root.fill(&WHITE)?;
-    let mut chart = ChartBuilder::on(&root)
-        .caption("loss", ("san-serif", 50).into_font())
-        .margin(20)
-        .x_label_area_size(30)
-        .y_label_area_size(50)
-        .build_cartesian_2d(0f64..max_x, 0f64..max_loss)?;
-    
-    chart.configure_mesh().draw()?;
-
-    let mut i: usize = 0;
-    chart
-        .draw_series(LineSeries::new(loss_vec.into_iter().map(|x| {i += 1; (x_vec[i - 1], x)}), &RED))?
-        .label("loss")
-        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
-
-    chart
-        .configure_series_labels()
-        .background_style(&WHITE.mix(0.8))
-        .border_style(&BLACK)
-        .draw()?;
-
-    root.present()?;
-    Ok(())
-}
-
-#[derive(Debug)]
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Data {
     pub inputs: Vec<f64>,
     pub labels: Vec<f64>
@@ -104,14 +69,19 @@ pub fn xor_dataset() -> DataSet {
     DataSet::new(datas)
 }
 
-pub fn flood_dataset() -> Result<DataSet, Box<dyn Error>> {
-    fn standard_score(input: f64) -> f64 {
-        let std = 120.451671938513000;
-        let mean = 340.303963198868000;
-        (input-mean)/std
-    }
+pub fn flood_std_sc(input: f64) -> f64 {
+    let std = 120.451671938513000;
+    let mean = 340.303963198868000;
+    (input-mean)/std
+}
 
-    
+pub fn flood_stdsc_rev(input: f64) -> f64 {
+    let std = 120.451671938513000;
+    let mean = 340.303963198868000;
+    input * std + mean
+}
+
+pub fn flood_dataset() -> Result<DataSet, Box<dyn Error>> {
     #[derive(Debug, Deserialize)]
     struct Record {
         s1_t3: f64,
@@ -131,17 +101,17 @@ pub fn flood_dataset() -> Result<DataSet, Box<dyn Error>> {
         let record: Record = record?;
         let mut inputs: Vec<f64> = vec![];
         // station 1
-        inputs.push(standard_score(record.s1_t3));
-        inputs.push(standard_score(record.s1_t2));
-        inputs.push(standard_score(record.s1_t1));
-        inputs.push(standard_score(record.s1_t0));
+        inputs.push(flood_std_sc(record.s1_t3));
+        inputs.push(flood_std_sc(record.s1_t2));
+        inputs.push(flood_std_sc(record.s1_t1));
+        inputs.push(flood_std_sc(record.s1_t0));
         // station 2
-        inputs.push(standard_score(record.s2_t3));
-        inputs.push(standard_score(record.s2_t2));
-        inputs.push(standard_score(record.s2_t1));
-        inputs.push(standard_score(record.s2_t0));
+        inputs.push(flood_std_sc(record.s2_t3));
+        inputs.push(flood_std_sc(record.s2_t2));
+        inputs.push(flood_std_sc(record.s2_t1));
+        inputs.push(flood_std_sc(record.s2_t0));
 
-        let labels: Vec<f64> = vec![f64::from(standard_score(record.t7))];
+        let labels: Vec<f64> = vec![f64::from(flood_std_sc(record.t7))];
         datas.push(Data {inputs, labels});
     }
     Ok(DataSet::new(datas))
