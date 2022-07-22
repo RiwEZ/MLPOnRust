@@ -23,22 +23,22 @@ impl DataSet {
         }
         let k = (percent * (self.datas.len() as f64)).ceil() as usize; // fold size
         let n = (self.datas.len() as f64 / k as f64).ceil() as usize; // number of folds
+        let datas = self.get_shuffled().clone(); // shuffled data before slicing it
         let mut set: Vec<(DataSet, DataSet)> = vec![]; 
 
         let mut curr: usize = 0;
-        
         for _ in 0..n {
-            let r_pt: usize = if curr + k > self.datas.len() {self.datas.len()} else {curr + k};
+            let r_pt: usize = if curr + k > datas.len() {datas.len()} else {curr + k};
 
-            let validation_set: Vec<Data> = self.datas[curr..r_pt].to_vec();
+            let validation_set: Vec<Data> = datas[curr..r_pt].to_vec();
             let training_set: Vec<Data> = 
                 if curr > 0 {
-                    let mut temp = self.datas[0..curr].to_vec();
-                    temp.append(&mut self.datas[r_pt..self.datas.len()].to_vec());
+                    let mut temp = datas[0..curr].to_vec();
+                    temp.append(&mut datas[r_pt..datas.len()].to_vec());
                     temp
                 }
                 else {
-                    self.datas[r_pt..self.datas.len()].to_vec()
+                    datas[r_pt..datas.len()].to_vec()
                 };
 
             set.push((DataSet::new(training_set), DataSet::new(validation_set)));
