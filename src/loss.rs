@@ -3,7 +3,6 @@ use crate::model;
 pub struct MSELoss {
     outputs: Vec<f64>,
     desired: Vec<f64>,
-    loss: f64,
 }
 
 impl MSELoss {
@@ -11,23 +10,18 @@ impl MSELoss {
         MSELoss {
             outputs: vec![],
             desired: vec![],
-            loss: 0.0,
         }
     }
 
-    fn func(output: f64, desired: f64) -> f64 {
+    pub fn func(output: f64, desired: f64) -> f64 {
         0.5 * (output - desired).powi(2)
     }
 
-    fn der(output: f64, desired: f64) -> f64 {
+    pub fn der(output: f64, desired: f64) -> f64 {
         output - desired
     }
 
-    pub fn item(&self) -> f64 {
-        self.loss
-    }
-
-    pub fn criterion(&mut self, outputs: Vec<f64>, desired: Vec<f64>) {
+    pub fn criterion(&mut self, outputs: Vec<f64>, desired: Vec<f64>) -> f64 {
         if outputs.len() != desired.len() {
             panic!("outputs size is not equal to desired size");
         }
@@ -36,9 +30,9 @@ impl MSELoss {
         for i in 0..outputs.len() {
             loss += MSELoss::func(outputs[i], desired[i]);
         }
-        self.loss = loss / (outputs.len() as f64);
         self.outputs = outputs;
         self.desired = desired;
+        loss
     }
 
     pub fn backward(&self, layers: &mut Vec<model::Layer>) {
@@ -113,13 +107,13 @@ mod tests {
     fn test_mse() {
         let mut loss = MSELoss::new();
 
-        loss.criterion(vec![2.0, 1.0, 0.0], vec![0.0, 1.0, 2.0]);
-        assert_eq!(loss.item(), 4.0 / 3.0);
+        let l = loss.criterion(vec![2.0, 1.0, 0.0], vec![0.0, 1.0, 2.0]);
+        assert_eq!(l, 4.0 / 3.0);
 
         loss.criterion(
             vec![34.0, 37.0, 44.0, 47.0, 48.0],
             vec![37.0, 40.0, 46.0, 44.0, 46.0],
         );
-        assert_eq!(loss.item(), 3.5);
+        assert_eq!(l, 3.5);
     }
 }

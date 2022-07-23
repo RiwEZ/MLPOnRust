@@ -73,6 +73,10 @@ impl DataSet {
         data_points.iter().fold(0.0f64, |mean, &val| mean + val / n)
     }
 
+    pub fn len(&self) -> usize {
+        self.datas.len()
+    }
+
     pub fn get_datas(&self) -> Vec<Data> {
         self.datas.clone()
     }
