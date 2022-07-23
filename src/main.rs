@@ -1,23 +1,27 @@
 pub mod activator;
+pub mod loss;
 pub mod model;
 pub mod utills;
-pub mod loss;
 
-use std::error::Error;
 use model::{Layer, Net};
-use utills::data;
-use utills::io;
-use utills::graph;
+use std::error::Error;
 use std::time::{Duration, Instant};
+use utills::data;
+use utills::graph;
+use utills::io;
 
-fn lr_finder(net: &mut model::Net, loss: &mut loss::MSELoss, dataset: &data::DataSet) -> Result<(), Box<dyn Error>> {
+fn lr_finder(
+    net: &mut model::Net,
+    loss: &mut loss::MSELoss,
+    dataset: &data::DataSet,
+) -> Result<(), Box<dyn Error>> {
     let mut lr = 0f64;
     let mut loss_vec: Vec<f64> = vec![];
     let mut x_vec = vec![];
 
     for i in 0..400 {
         let mut running_loss = 0.0;
-        
+
         // 1 batch?
         for data in dataset.get_shuffled() {
             let result = net.forward(data.inputs.clone());
@@ -39,13 +43,12 @@ fn lr_finder(net: &mut model::Net, loss: &mut loss::MSELoss, dataset: &data::Dat
     Ok(())
 }
 
-
 fn main() -> Result<(), Box<dyn Error>> {
     let dataset = data::flood_dataset()?;
     let mut loss = loss::MSELoss::new();
     let lr = 0.01;
     let momentum = 0.01;
-    
+
     let mut j = 0;
     let mut cv_score: Vec<f64> = vec![];
     let start = Instant::now();
@@ -59,7 +62,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         // get training set and validation set
         let training_set = data::standardization(&dt.0, dt.0.mean(), dt.0.std());
         let validation_set = data::standardization(&dt.1, dt.0.mean(), dt.0.std());
-        
+
         // training
         let mut loss_vec: Vec<f64> = vec![];
         let mut valid_loss_vec: Vec<f64> = vec![];
@@ -80,7 +83,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             x_vec.push(i as f64);
             running_loss /= training_set.get_datas().len() as f64;
             loss_vec.push(running_loss);
-            
+
             let mut valid_loss: f64 = 0.0;
             for data in validation_set.get_datas() {
                 let result = net.forward(data.inputs.clone());
@@ -89,14 +92,21 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
             valid_loss /= validation_set.get_datas().len() as f64;
             valid_loss_vec.push(valid_loss);
-               
-            println!("epoch: {}, loss: {:.6}, valid_loss: {:.6}", i, running_loss, valid_loss);   
-            
+
+            println!(
+                "epoch: {}, loss: {:.6}, valid_loss: {:.6}",
+                i, running_loss, valid_loss
+            );
         }
         cv_score.push(valid_loss_vec[valid_loss_vec.len() - 1]);
 
         //println!("{:?}", &net);
-        graph::draw_loss(x_vec, loss_vec, valid_loss_vec, format!("img/flood/{}_valid_loss.png", j))?;
+        graph::draw_loss(
+            x_vec,
+            loss_vec,
+            valid_loss_vec,
+            format!("img/flood/{}_valid_loss.png", j),
+        )?;
         //io::save(&net.layers, format!("models/flood/{}.json", j))?;
         j += 1;
     }

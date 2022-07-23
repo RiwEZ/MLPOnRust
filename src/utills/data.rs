@@ -1,12 +1,12 @@
 use crate::io::read_lines;
-use std::error::Error;
 use rand::prelude::SliceRandom;
 use serde::Deserialize;
+use std::error::Error;
 
 #[derive(Debug, Clone)]
 pub struct Data {
     pub inputs: Vec<f64>,
-    pub labels: Vec<f64>
+    pub labels: Vec<f64>,
 }
 pub struct DataSet {
     datas: Vec<Data>,
@@ -14,9 +14,9 @@ pub struct DataSet {
 
 impl DataSet {
     pub fn new(datas: Vec<Data>) -> DataSet {
-        DataSet {datas}
+        DataSet { datas }
     }
-    
+
     pub fn cross_valid_set(&self, percent: f64) -> Vec<(DataSet, DataSet)> {
         if percent < 0.0 && percent > 1.0 {
             panic!("argument percent must be in range [0, 1]")
@@ -24,22 +24,24 @@ impl DataSet {
         let k = (percent * (self.datas.len() as f64)).ceil() as usize; // fold size
         let n = (self.datas.len() as f64 / k as f64).ceil() as usize; // number of folds
         let datas = self.get_shuffled().clone(); // shuffled data before slicing it
-        let mut set: Vec<(DataSet, DataSet)> = vec![]; 
+        let mut set: Vec<(DataSet, DataSet)> = vec![];
 
         let mut curr: usize = 0;
         for _ in 0..n {
-            let r_pt: usize = if curr + k > datas.len() {datas.len()} else {curr + k};
+            let r_pt: usize = if curr + k > datas.len() {
+                datas.len()
+            } else {
+                curr + k
+            };
 
             let validation_set: Vec<Data> = datas[curr..r_pt].to_vec();
-            let training_set: Vec<Data> = 
-                if curr > 0 {
-                    let mut temp = datas[0..curr].to_vec();
-                    temp.append(&mut datas[r_pt..datas.len()].to_vec());
-                    temp
-                }
-                else {
-                    datas[r_pt..datas.len()].to_vec()
-                };
+            let training_set: Vec<Data> = if curr > 0 {
+                let mut temp = datas[0..curr].to_vec();
+                temp.append(&mut datas[r_pt..datas.len()].to_vec());
+                temp
+            } else {
+                datas[r_pt..datas.len()].to_vec()
+            };
 
             set.push((DataSet::new(training_set), DataSet::new(validation_set)));
             curr += k
@@ -55,7 +57,10 @@ impl DataSet {
             data_points.append(&mut dt.labels);
         }
         let n = data_points.len() as f64;
-        data_points.iter().fold(0.0f64, |sum, &val| {sum + (val-mean).powi(2)/n}).sqrt()
+        data_points
+            .iter()
+            .fold(0.0f64, |sum, &val| sum + (val - mean).powi(2) / n)
+            .sqrt()
     }
 
     pub fn mean(&self) -> f64 {
@@ -65,9 +70,9 @@ impl DataSet {
             data_points.append(&mut dt.labels);
         }
         let n = data_points.len() as f64;
-        data_points.iter().fold(0.0f64, |mean, &val| {mean + val/n})
+        data_points.iter().fold(0.0f64, |mean, &val| mean + val / n)
     }
-    
+
     pub fn get_datas(&self) -> Vec<Data> {
         self.datas.clone()
     }
@@ -84,26 +89,29 @@ pub fn xor_dataset() -> DataSet {
     let labels = vec![[0.0], [1.0], [1.0], [0.0]];
     let mut datas: Vec<Data> = vec![];
     for i in 0..4 {
-        datas.push(Data {inputs: inputs[i].to_vec(), labels: labels[i].to_vec()});
+        datas.push(Data {
+            inputs: inputs[i].to_vec(),
+            labels: labels[i].to_vec(),
+        });
     }
-    
+
     DataSet::new(datas)
 }
 
 pub fn standardization(dataset: &DataSet, mean: f64, std: f64) -> DataSet {
     let mut datas: Vec<Data> = vec![];
-    
+
     for dt in dataset.get_datas() {
         let mut inputs: Vec<f64> = vec![];
         let mut labels: Vec<f64> = vec![];
-        
+
         for x in dt.inputs {
-            inputs.push((x - mean)/std);
+            inputs.push((x - mean) / std);
         }
         for x in dt.labels {
-            labels.push((x - mean)/std);
+            labels.push((x - mean) / std);
         }
-        datas.push(Data {inputs, labels});
+        datas.push(Data { inputs, labels });
     }
     DataSet::new(datas)
 }
@@ -119,7 +127,7 @@ pub fn flood_dataset() -> Result<DataSet, Box<dyn Error>> {
         s2_t2: f64,
         s2_t1: f64,
         s2_t0: f64,
-        t7: f64
+        t7: f64,
     }
 
     let mut datas: Vec<Data> = vec![];
@@ -139,7 +147,7 @@ pub fn flood_dataset() -> Result<DataSet, Box<dyn Error>> {
         inputs.push(record.s2_t0);
 
         let labels: Vec<f64> = vec![f64::from(record.t7)];
-        datas.push(Data {inputs, labels});
+        datas.push(Data { inputs, labels });
     }
     Ok(DataSet::new(datas))
 }
@@ -153,12 +161,12 @@ pub fn cross_dataset() -> Result<DataSet, Box<dyn Error>> {
         for w in l1.split(" ") {
             let v: f64 = w.parse().unwrap();
             inputs.push(v);
-        }   
+        }
         for w in l2.split(" ") {
             let v: f64 = w.parse().unwrap();
             labels.push(v);
-        }   
-        datas.push(Data {inputs, labels});
+        }
+        datas.push(Data { inputs, labels });
     }
     Ok(DataSet::new(datas))
 }
@@ -175,7 +183,7 @@ fn temp_test() -> Result<(), Box<dyn Error>> {
     println!("\n\n{:?}", standardization(validation_set).get_datas());
      */
 
-    /* 
+    /*
     if let Ok(dt) = cross_dataset() {
         println!("{:?}", dt.get_datas());
     }

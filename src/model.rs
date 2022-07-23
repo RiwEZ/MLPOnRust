@@ -10,11 +10,16 @@ pub struct Layer {
     pub prev_grads: Vec<Vec<f64>>,
     pub local_grads: Vec<f64>,
     pub prev_local_grads: Vec<f64>,
-    pub act: activator::ActivationContainer
+    pub act: activator::ActivationContainer,
 }
 
 impl Layer {
-    pub fn new(input_features: u64, output_features: u64, bias: f64, act: activator::ActivationContainer) -> Layer {
+    pub fn new(
+        input_features: u64,
+        output_features: u64,
+        bias: f64,
+        act: activator::ActivationContainer,
+    ) -> Layer {
         // initialize weights matrix
         let mut weights: Vec<Vec<f64>> = vec![];
         let mut inputs: Vec<f64> = vec![];
@@ -29,7 +34,7 @@ impl Layer {
             outputs.push(0.0);
             local_grads.push(0.0);
             prev_local_grads.push(0.0);
-            b.push(bias);           
+            b.push(bias);
 
             let mut w: Vec<f64> = vec![];
             let mut g: Vec<f64> = vec![];
@@ -45,7 +50,17 @@ impl Layer {
             grads.push(g.clone());
             prev_grads.push(g);
         }
-        Layer { inputs, outputs, w: weights, b, grads, prev_grads, local_grads, prev_local_grads, act }
+        Layer {
+            inputs,
+            outputs,
+            w: weights,
+            b,
+            grads,
+            prev_grads,
+            local_grads,
+            prev_local_grads,
+            act,
+        }
     }
 
     pub fn forward(&mut self, inputs: Vec<f64>) -> Vec<f64> {
@@ -64,13 +79,14 @@ impl Layer {
         }
         self.inputs = inputs;
         result
-    } 
+    }
 
     pub fn update(&mut self, lr: f64, momentum: f64) {
         for j in 0..self.w.len() {
             self.b[j] -= momentum * self.prev_local_grads[j] + lr * self.local_grads[j]; // update each neuron bias
             for i in 0..self.w[j].len() {
-                self.w[j][i] -= momentum * self.prev_grads[j][i] + lr * self.grads[j][i]; // update each weights
+                self.w[j][i] -= momentum * self.prev_grads[j][i] + lr * self.grads[j][i];
+                // update each weights
             }
         }
     }
@@ -136,13 +152,14 @@ impl Net {
     pub fn new(architecture: Vec<u64>) -> Net {
         let mut layers: Vec<Layer> = vec![];
         for i in 1..architecture.len() {
-            layers.push(
-                Layer::new(
-                    architecture[i - 1], 
-                    architecture[i], 
-                    1f64, activator::sigmoid()))
+            layers.push(Layer::new(
+                architecture[i - 1],
+                architecture[i],
+                1f64,
+                activator::sigmoid(),
+            ))
         }
-        Net {layers}
+        Net { layers }
     }
 
     pub fn zero_grad(&mut self) {
@@ -169,12 +186,12 @@ impl Net {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_linear_new() {
         let linear = Layer::new(2, 3, 1.0, activator::linear());
         assert_eq!(linear.outputs.len(), 3);
-        assert_eq!(linear.inputs.len(), 2);   
+        assert_eq!(linear.inputs.len(), 2);
 
         assert_eq!(linear.w.len(), 3);
         assert_eq!(linear.w[0].len(), 2);
@@ -191,13 +208,13 @@ mod tests {
     #[test]
     fn test_linear_forward1() {
         let mut linear = Layer::new(2, 1, 1.0, activator::sigmoid());
-        
+
         for j in 0..linear.w.len() {
             for i in 0..linear.w[j].len() {
                 linear.w[j][i] = 1.0;
             }
         }
-        
+
         assert_eq!(linear.forward(vec![1.0, 1.0])[0], 0.982013790037908442);
         assert_eq!(linear.outputs[0], 4.0);
     }
@@ -205,10 +222,10 @@ mod tests {
     #[test]
     fn test_linear_forward2() {
         let mut linear = Layer::new(2, 2, 1.0, activator::sigmoid());
-        
+
         for j in 0..linear.w.len() {
             for i in 0..linear.w[j].len() {
-                linear.w[j][i] =  (j as f64) + 1.0;
+                linear.w[j][i] = (j as f64) + 1.0;
             }
         }
         let result = linear.forward(vec![0.0, 1.0]);
