@@ -57,8 +57,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         let mut net = Net::from_layers(layers);
 
         // get training set and validation set
-        let training_set = dt.0;
-        let validation_set = dt.1;
+        let training_set = data::standardization(&dt.0, dt.0.mean(), dt.0.std());
+        let validation_set = data::standardization(&dt.1, dt.0.mean(), dt.0.std());
         
         // training
         let mut loss_vec: Vec<f64> = vec![];
@@ -102,5 +102,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
     let duration: Duration = start.elapsed();
     print!("cv_score: {:?}, time used: {:?}", cv_score, duration);
+    graph::draw_cv_scores(cv_score.clone(), "img/flood/cv_score.png".to_string())?;
     Ok(())
 }

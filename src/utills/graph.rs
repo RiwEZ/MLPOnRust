@@ -46,7 +46,7 @@ pub fn draw_loss(x_vec: Vec<f64>, loss_vec: Vec<f64>, valid_loss_vec: Vec<f64>, 
 /// Draw cross validation score of given data (validation score for each iteraion)
 pub fn draw_cv_scores(data: Vec<f64>, path: String) -> Result<(), Box<dyn Error>> {
     let n = data.len();
-    let max_y = data.iter().fold(0.0f64, |max, &val| if val > max {val} else {max}) + 0.1;
+    let max_y = data.iter().fold(0.0f64, |max, &val| if val > max {val} else {max});
     let mean = data.iter().fold(0.0f64, |mean, &val| {mean + val/n as f64});
 
     let root = BitMapBackend::new(&path, (1024, 768)).into_drawing_area();
@@ -64,8 +64,8 @@ pub fn draw_cv_scores(data: Vec<f64>, path: String) -> Result<(), Box<dyn Error>
         .disable_x_mesh()
         .x_label_style(("san-serif, 14").into_font())
         .y_label_style(("san-serif, 14").into_font())
-        .y_desc("validation loss") 
-        .x_desc("iterations") 
+        .y_desc("Validation loss") 
+        .x_desc("Iterations") 
         .axis_desc_style(("sans-serif", 20))
         .draw()?;
     
@@ -76,10 +76,19 @@ pub fn draw_cv_scores(data: Vec<f64>, path: String) -> Result<(), Box<dyn Error>
 
     chart.draw_series(hist)?;
 
-    chart.draw_secondary_series(
-        LineSeries::new(data.iter().enumerate().map(|(i, _)| {(i + 1, mean)}), 
-            BLUE.filled().stroke_width(2))
-    )?;
+    chart
+        .draw_secondary_series(
+            LineSeries::new(data.iter().enumerate().map(|(i, _)| {(i + 1, mean)}), BLUE.filled().stroke_width(2))
+        )?
+        .label("mean loss")
+        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
+    
+    chart
+        .configure_series_labels()
+        .label_font(("san-serif", 14))
+        .background_style(&WHITE)
+        .border_style(&BLACK)
+        .draw()?;
 
     root.present()?;
     Ok(())
