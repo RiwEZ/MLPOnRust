@@ -10,19 +10,22 @@ use utills::data;
 use utills::graph;
 use utills::io;
 
-fn main() -> Result<(), Box<dyn Error>> {
+fn main() {
+}
+
+#[test]
+fn flood_8_4_2() -> Result<(), Box<dyn Error>> {
     let dataset = data::flood_dataset()?;
     let mut loss = loss::MSELoss::new();
     let lr = 0.01;
     let momentum = 0.001;
     let epochs = 2000;
 
-    let mut j = 0;
     let mut cv_score: Vec<f64> = vec![];
     let mut r2_score: Vec<f64> = vec![];
+    let mut loss_g = graph::LossGraph::new();
     let start = Instant::now();
-
-    for dt in dataset.cross_valid_set(0.1) {
+    for (j, dt) in dataset.cross_valid_set(0.1).iter().enumerate() {
         // creating a model
         let mut layers: Vec<model::Layer> = vec![];
         layers.push(Layer::new(8, 4, 1.0, activator::sigmoid()));
@@ -85,20 +88,16 @@ fn main() -> Result<(), Box<dyn Error>> {
             );
         }
 
-        graph::draw_loss(
-            x_vec,
-            loss_vec,
-            valid_loss_vec,
-            format!("img/flood-8-4-2/{}_valid_loss.png", j),
-        )?;
+        loss_g.add_loss(loss_vec, valid_loss_vec);
         io::save(&net.layers, format!("models/flood-8-4-2/{}.json", j))?;
-        j += 1;
     }
     let duration: Duration = start.elapsed();
     print!(
         "cv_score: {:?}\n r2_score: {:?}\n time used: {:?}",
         cv_score, r2_score, duration
     );
+
+    loss_g.draw("img/flood-8-4-2/loss.png".to_string())?;
     graph::draw_loss_scores(cv_score.clone(), "img/flood-8-4-2/cv_score.png".to_string())?;
     graph::draw_r2_scores(r2_score, "img/flood-8-4-2/r2_score.png".to_string())?;
     Ok(())

@@ -1,77 +1,93 @@
+use plotters::coord::Shift;
 use plotters::prelude::*;
 use std::error::Error;
 
-/// Draw training loss and validation loss at each epoch (x_vec)
-pub fn draw_loss(
-    x_vec: Vec<f64>,
-    loss_vec: Vec<f64>,
-    valid_loss_vec: Vec<f64>,
-    path: String,
-) -> Result<(), Box<dyn Error>> {
-    let max_loss1 = loss_vec
-        .iter()
-        .fold(0.0f64, |max, &val| if val > max { val } else { max });
-    let max_loss2 = valid_loss_vec
-        .iter()
-        .fold(0.0f64, |max, &val| if val > max { val } else { max });
-    let max_loss = if max_loss1 > max_loss2 {
-        max_loss1
-    } else {
-        max_loss2
-    };
+pub struct LossGraph {
+    loss: Vec<Vec<f64>>,
+    valid_loss: Vec<Vec<f64>>,
+}
 
-    let max_x = x_vec
-        .iter()
-        .fold(0.0f64, |max, &val| if val > max { val } else { max });
-    let min_x = x_vec
-        .iter()
-        .fold(0.0f64, |max, &val| if val < max { val } else { max });
+impl LossGraph {
+    pub fn new() -> LossGraph {
+        let loss: Vec<Vec<f64>> = vec![];
+        let valid_loss: Vec<Vec<f64>> = vec![];
+        LossGraph { loss, valid_loss }
+    }
 
-    // plotting loss
-    let root = BitMapBackend::new(&path, (1024, 768)).into_drawing_area();
-    root.fill(&WHITE)?;
-    let mut chart = ChartBuilder::on(&root)
-        .caption("loss", ("Hack", 44, FontStyle::Bold).into_font())
-        .margin(20)
-        .x_label_area_size(50)
-        .y_label_area_size(60)
-        .build_cartesian_2d(min_x..max_x, 0f64..max_loss)?;
+    pub fn add_loss(&mut self, training: Vec<f64>, validation: Vec<f64>) {
+        self.loss.push(training);
+        self.valid_loss.push(validation);
+    }
+    /// Draw training loss and validation loss at each epoch (x_vec)
+    pub fn draw_loss(
+        &self,
+        idx: u32,
+        root: &DrawingArea<BitMapBackend, Shift>,
+        loss_vec: &Vec<f64>,
+        valid_loss_vec: &Vec<f64>,
+    ) -> Result<(), Box<dyn Error>> {
+        let max_loss1 = loss_vec
+            .iter()
+            .fold(0.0f64, |max, &val| if val > max { val } else { max });
+        let max_loss2 = valid_loss_vec
+            .iter()
+            .fold(0.0f64, |max, &val| if val > max { val } else { max });
+        let max_loss = if max_loss1 > max_loss2 {
+            max_loss1
+        } else {
+            max_loss2
+        };
 
-    chart
-        .configure_mesh()
-        .y_desc("Loss")
-        .x_desc("Epochs")
-        .axis_desc_style(("Hack", 20))
-        .draw()?;
+        let mut chart = ChartBuilder::on(&root)
+            .caption(
+                format!("Loss {}", idx),
+                ("Hack", 44, FontStyle::Bold).into_font(),
+            )
+            .margin(20)
+            .x_label_area_size(50)
+            .y_label_area_size(60)
+            .build_cartesian_2d(0..loss_vec.len(), 0f64..max_loss)?;
 
-    chart
-        .draw_series(LineSeries::new(
-            loss_vec.iter().enumerate().map(|(i, x)| (x_vec[i], *x)),
+        chart
+            .configure_mesh()
+            .y_desc("Loss")
+            .x_desc("Epochs")
+            .axis_desc_style(("Hack", 20))
+            .draw()?;
+
+        chart.draw_series(LineSeries::new(
+            loss_vec.iter().enumerate().map(|(i, x)| (i + 1, *x)),
             &RED,
-        ))?
-        .label("training_loss")
-        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
+        ))?;
 
-    chart
-        .draw_series(LineSeries::new(
-            valid_loss_vec
-                .iter()
-                .enumerate()
-                .map(|(i, x)| (x_vec[i], *x)),
+        chart.draw_series(LineSeries::new(
+            valid_loss_vec.iter().enumerate().map(|(i, x)| (i + 1, *x)),
             &BLUE,
-        ))?
-        .label("validation_loss")
-        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
+        ))?;
 
-    chart
-        .configure_series_labels()
-        .label_font(("Hack", 14).into_font())
-        .background_style(&WHITE.mix(0.8))
-        .border_style(&BLACK)
-        .draw()?;
+        root.present()?;
+        Ok(())
+    }
 
-    root.present()?;
-    Ok(())
+    pub fn draw(&self, path: String) -> Result<(), Box<dyn Error>> {
+        let root = BitMapBackend::new(&path, (2000, 1000)).into_drawing_area();
+        root.fill(&WHITE)?;
+        // hardcode for 10 iteraions
+        let drawing_areas = root.split_evenly((2, 5));
+
+        let mut loss_iter = self.loss.iter();
+        let mut valid_loss_iter = self.valid_loss.iter();
+
+        for (drawing_area, idx) in drawing_areas.iter().zip(1..) {
+            if let (Some(loss_vec), Some(valid_loss_vec)) =
+                (loss_iter.next(), valid_loss_iter.next())
+            {
+                self.draw_loss(idx, drawing_area, loss_vec, valid_loss_vec)?;
+            }
+        }
+
+        Ok(())
+    }
 }
 
 /// Draw cross validation loss for each iteraion
