@@ -1,24 +1,27 @@
 use crate::model;
 
-pub struct MSELoss {
+pub struct Loss {
     outputs: Vec<f64>,
     desired: Vec<f64>,
+    pub func: fn(f64, f64) -> f64,
+    pub der: fn(f64, f64) -> f64
 }
 
-impl MSELoss {
-    pub fn new() -> MSELoss {
-        MSELoss {
+impl Loss {
+    pub fn mse() -> Loss {
+        fn func(output: f64, desired: f64) -> f64 {
+            0.5 * (output - desired).powi(2)
+        }
+        fn der(output: f64, desired: f64) -> f64 {
+            output - desired
+        }
+        
+        Loss {
             outputs: vec![],
             desired: vec![],
+            func,
+            der
         }
-    }
-
-    pub fn func(output: f64, desired: f64) -> f64 {
-        0.5 * (output - desired).powi(2)
-    }
-
-    pub fn der(output: f64, desired: f64) -> f64 {
-        output - desired
     }
 
     pub fn criterion(&mut self, outputs: Vec<f64>, desired: Vec<f64>) -> f64 {
@@ -28,7 +31,7 @@ impl MSELoss {
 
         let mut loss = 0.0;
         for i in 0..outputs.len() {
-            loss += MSELoss::func(outputs[i], desired[i]);
+            loss += (self.func)(outputs[i], desired[i]);
         }
         self.outputs = outputs;
         self.desired = desired;
@@ -41,7 +44,7 @@ impl MSELoss {
             if l == layers.len() - 1 {
                 for j in 0..layers[l].outputs.len() {
                     // compute grads
-                    let local_grad = MSELoss::der(self.outputs[j], self.desired[j])
+                    let local_grad = (self.der)(self.outputs[j], self.desired[j])
                         * (layers[l].act.der)(layers[l].outputs[j]);
 
                     layers[l].prev_local_grads = layers[l].local_grads.clone(); // copied previous grad before update
@@ -93,19 +96,19 @@ mod tests {
 
     #[test]
     fn test_mse_func() {
-        assert_eq!(MSELoss::func(2.0, 1.0), 0.5);
-        assert_eq!(MSELoss::func(5.0, 0.0), 12.5);
+        assert_eq!((Loss::mse().func)(2.0, 1.0), 0.5);
+        assert_eq!((Loss::mse().func)(5.0, 0.0), 12.5);
     }
 
     #[test]
     fn test_mse_der() {
-        assert_eq!(MSELoss::der(2.0, 1.0), 1.0);
-        assert_eq!(MSELoss::der(5.0, 0.0), 5.0);
+        assert_eq!((Loss::mse().der)(2.0, 1.0), 1.0);
+        assert_eq!((Loss::mse().der)(5.0, 0.0), 5.0);
     }
 
     #[test]
     fn test_mse() {
-        let mut loss = MSELoss::new();
+        let mut loss = Loss::mse();
 
         let l = loss.criterion(vec![2.0, 1.0, 0.0], vec![0.0, 1.0, 2.0]);
         assert_eq!(l, 4.0 / 3.0);

@@ -1,4 +1,4 @@
-use crate::io::read_lines;
+use super::io::read_lines;
 use rand::prelude::SliceRandom;
 use serde::Deserialize;
 use std::error::Error;

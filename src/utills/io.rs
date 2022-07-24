@@ -3,6 +3,7 @@ use crate::model;
 use serde_json::{json, to_writer_pretty, Value};
 use std::error::Error;
 use std::fs::File;
+use std::fs::create_dir;
 use std::io::Read;
 use std::io::{self, BufRead};
 use std::path::Path;
@@ -80,6 +81,21 @@ where
     }
 
     Ok(model::Net::from_layers(layers))
+}
+
+/// Check if specify folder exists in models and img folder, if not create it
+///
+/// Return models path and img path
+pub fn check_dir(folder: &str) -> Result<(String, String), Box<dyn Error>> {
+    let models_path = format!("models/{}", folder);
+    if !Path::new(&models_path).exists() {
+        create_dir(&models_path)?;
+    }
+    let img_path = format!("img/{}", folder);
+    if !Path::new(&img_path).exists() {
+        create_dir(&img_path)?;
+    }
+    Ok((models_path, img_path))
 }
 
 #[cfg(test)]
