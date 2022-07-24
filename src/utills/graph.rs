@@ -26,17 +26,18 @@ impl LossGraph {
         loss_vec: &Vec<f64>,
         valid_loss_vec: &Vec<f64>,
     ) -> Result<(), Box<dyn Error>> {
-        let max_loss1 = loss_vec
-            .iter()
-            .fold(0.0f64, |max, &val| if val > max { val } else { max });
-        let max_loss2 = valid_loss_vec
-            .iter()
-            .fold(0.0f64, |max, &val| if val > max { val } else { max });
-        let max_loss = if max_loss1 > max_loss2 {
-            max_loss1
-        } else {
-            max_loss2
-        };
+        let max_loss1 = loss_vec.iter().fold(0f64, |max, &val| val.max(max));
+        let max_loss2 = valid_loss_vec.iter().fold(0f64, |max, &val| val.max(max));
+        let max_loss = max_loss1.max(max_loss2);
+
+        let min_loss1 = loss_vec.iter().fold(0f64, |min, &val| val.min(min));
+        let min_loss2 = valid_loss_vec.iter().fold(0f64, |min, &val| val.min(min));
+        let min_loss = 
+            if min_loss1.min(min_loss2) > 0.0 {
+                0.0
+            } else {
+                min_loss1.min(min_loss2)
+            };
 
         let mut chart = ChartBuilder::on(&root)
             .caption(
@@ -46,7 +47,7 @@ impl LossGraph {
             .margin(20)
             .x_label_area_size(50)
             .y_label_area_size(60)
-            .build_cartesian_2d(0..loss_vec.len(), 0f64..max_loss)?;
+            .build_cartesian_2d(0..loss_vec.len(), min_loss..max_loss)?;
 
         chart
             .configure_mesh()

@@ -1,4 +1,4 @@
-//! Contains training code for variations of flood dataset models.
+//! Contains training code for variations of cross.pat dataset models.
 use super::activator;
 use super::loss;
 use super::model;
@@ -13,19 +13,19 @@ use utills::data;
 use utills::graph;
 use utills::io;
 
-pub fn flood_8_4_1(lr: f64, momentum: f64, folder: &str) -> Result<(), Box<dyn Error>> {
+pub fn cross_2_4_2(lr: f64, momentum: f64, folder: &str) -> Result<(), Box<dyn Error>> {
     fn model() -> Net {
         let mut layers: Vec<model::Layer> = vec![];
-        layers.push(Layer::new(8, 4, 1.0, activator::sigmoid()));
-        layers.push(Layer::new(4, 1, 1.0, activator::linear()));
+        layers.push(Layer::new(2, 4, 1.0, activator::sigmoid()));
+        layers.push(Layer::new(4, 2, 1.0, activator::sigmoid()));
         Net::from_layers(layers)
     }
 
-    flood_fit(&model, lr, momentum, folder)?;
+    cross_fit(&model, lr, momentum, folder)?;
     Ok(())
 }
 
-pub fn flood_fit(
+pub fn cross_fit(
     model: &dyn Fn() -> Net,
     lr: f64,
     momentum: f64,
@@ -33,21 +33,21 @@ pub fn flood_fit(
 ) -> Result<(), Box<dyn Error>> {
     let (models, img) = utills::io::check_dir(folder)?;
 
-    let dataset = data::flood_dataset()?;
-    let mut loss = loss::Loss::mse();
-    let epochs = 1000;
+    let dataset = data::cross_dataset()?;
+    let mut loss = loss::Loss::bce();
+    let epochs = 2000;
 
     let mut cv_score: Vec<f64> = vec![];
-    let mut r2_score: Vec<f64> = vec![];
     let mut loss_g = graph::LossGraph::new();
+
     let start = Instant::now();
     for (j, dt) in dataset.cross_valid_set(0.1).iter().enumerate() {
         // creating a model
         let mut net = model();
 
         // get training set and validation set
-        let training_set = data::standardization(&dt.0, dt.0.mean(), dt.0.std());
-        let validation_set = data::standardization(&dt.1, dt.0.mean(), dt.0.std());
+        let training_set = &dt.0;
+        let validation_set = &dt.1;
 
         // training
         let mut loss_vec: Vec<f64> = vec![];
@@ -67,30 +67,24 @@ pub fn flood_fit(
             loss_vec.push(running_loss);
 
             let mut valid_loss: f64 = 0.0;
+            let mut correct_predict = 0;
             for data in validation_set.get_datas() {
                 let result = net.forward(data.inputs.clone());
+                
+                if result[0] > 0.5 && data.labels.clone()[0] == 1.0 {
+                    correct_predict += 1;
+                }
+                else if result[0] <= 0.5 && data.labels.clone()[1] == 0.0 {
+                    correct_predict += 1;
+                }
+
                 valid_loss += loss.criterion(result, data.labels.clone());
             }
             valid_loss /= validation_set.get_datas().len() as f64;
             valid_loss_vec.push(valid_loss);
 
             if i == epochs - 1 {
-                // log score
-                let label_mean = validation_set.get_datas().iter().fold(0f64, |mean, val| {
-                    mean + val.labels[0] / validation_set.len() as f64
-                });
-
-                let mut total_sum_sqr = 0f64;
-                let mut sum_sqr = 0f64;
-
-                for data in validation_set.get_datas() {
-                    let result = net.forward(data.inputs.clone());
-                    sum_sqr += 0.5 * (data.labels[0] - result[0]).powi(2);
-                    total_sum_sqr += 0.5 * (data.labels[0] - label_mean).powi(2);
-                }
-
-                r2_score.push(1.0 - sum_sqr / total_sum_sqr);
-                cv_score.push(valid_loss);
+                cv_score.push(correct_predict as f64/validation_set.len() as f64);
             }
 
             println!(
@@ -105,16 +99,9 @@ pub fn flood_fit(
     let duration: Duration = start.elapsed();
 
     let mut file = fs::File::create(format!("{}/result.txt", models))?;
-    file.write_all(
-        format!(
-            "cv_score: {:?}\n\nr2_score: {:?}\n\ntime used: {:?}",
-            cv_score, r2_score, duration
-        )
-        .as_bytes(),
-    )?;
+    file.write_all(format!("cv_score: {:?}\n\ntime used: {:?}", cv_score, duration).as_bytes())?;
 
     loss_g.draw(format!("img/{}/loss.png", folder))?;
     graph::draw_loss_scores(cv_score.clone(), format!("{}/cv_score.png", img))?;
-    graph::draw_r2_scores(r2_score, format!("{}/r2_score.png", img))?;
     Ok(())
 }

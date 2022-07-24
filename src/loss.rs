@@ -4,10 +4,11 @@ pub struct Loss {
     outputs: Vec<f64>,
     desired: Vec<f64>,
     pub func: fn(f64, f64) -> f64,
-    pub der: fn(f64, f64) -> f64
+    pub der: fn(f64, f64) -> f64,
 }
 
 impl Loss {
+    /// Mean Squared Error
     pub fn mse() -> Loss {
         fn func(output: f64, desired: f64) -> f64 {
             0.5 * (output - desired).powi(2)
@@ -15,12 +16,29 @@ impl Loss {
         fn der(output: f64, desired: f64) -> f64 {
             output - desired
         }
-        
+
         Loss {
             outputs: vec![],
             desired: vec![],
             func,
-            der
+            der,
+        }
+    }
+
+    /// Binary Cross Entropy
+    pub fn bce() -> Loss {
+        fn func(output: f64, desired: f64) -> f64 {
+            -desired * output.ln() + (1.0 - desired) * (1.0 - output).ln()
+        }
+        fn der(output: f64, desired: f64) -> f64 {
+            -(desired / output - (1.0 - desired) / (1.0 - output))
+        }
+
+        Loss {
+            outputs: vec![],
+            desired: vec![],
+            func,
+            der,
         }
     }
 
@@ -118,5 +136,11 @@ mod tests {
             vec![37.0, 40.0, 46.0, 44.0, 46.0],
         );
         assert_eq!(l, 3.5);
+    }
+
+    #[test]
+    fn test_bce_func() {
+        println!("{}", (Loss::bce().func)(0.9, 0.0));
+        println!("{}", (Loss::bce().func)(0.9, 1.0));
     }
 }
