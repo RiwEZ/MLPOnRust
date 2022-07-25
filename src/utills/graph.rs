@@ -90,22 +90,26 @@ impl LossGraph {
     }
 }
 
-/// Draw cross validation loss for each iteraion
-pub fn draw_loss_scores(loss: Vec<f64>, path: String) -> Result<(), Box<dyn Error>> {
-    let n = loss.len();
-    let max_y = loss
+/// Draw histogram of given datas
+pub fn draw_histogram(
+    datas: Vec<f64>,
+    title: &str,
+    axes_desc: (&str, &str),
+    path: String,
+) -> Result<(), Box<dyn Error>> {
+    let n = datas.len();
+    let max_y = datas
         .iter()
         .fold(0.0f64, |max, &val| if val > max { val } else { max });
-    let mean = loss.iter().fold(0.0f64, |mean, &val| mean + val / n as f64);
+    let mean = datas
+        .iter()
+        .fold(0.0f64, |mean, &val| mean + val / n as f64);
 
     let root = BitMapBackend::new(&path, (1024, 768)).into_drawing_area();
     root.fill(&WHITE)?;
 
     let mut chart = ChartBuilder::on(&root)
-        .caption(
-            "Cross Validation Loss",
-            ("Hack", 44, FontStyle::Bold).into_font(),
-        )
+        .caption(title, ("Hack", 44, FontStyle::Bold).into_font())
         .margin(20)
         .x_label_area_size(50)
         .y_label_area_size(60)
@@ -115,76 +119,24 @@ pub fn draw_loss_scores(loss: Vec<f64>, path: String) -> Result<(), Box<dyn Erro
     chart
         .configure_mesh()
         .disable_x_mesh()
-        .y_desc("Validation loss")
-        .x_desc("Iterations")
+        .y_desc(axes_desc.1)
+        .x_desc(axes_desc.0)
         .axis_desc_style(("Hack", 20))
         .draw()?;
 
     let hist = Histogram::vertical(&chart)
         .style(RED.mix(0.5).filled())
         .margin(10)
-        .data(loss.iter().enumerate().map(|(i, x)| (i + 1, *x)));
+        .data(datas.iter().enumerate().map(|(i, x)| (i + 1, *x)));
 
     chart.draw_series(hist)?;
 
     chart
         .draw_secondary_series(LineSeries::new(
-            loss.iter().enumerate().map(|(i, _)| (i + 1, mean)),
+            datas.iter().enumerate().map(|(i, _)| (i + 1, mean)),
             BLUE.filled().stroke_width(2),
         ))?
-        .label(format!("mean loss: {:.3}", mean))
-        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
-
-    chart
-        .configure_series_labels()
-        .label_font(("Hack", 14).into_font())
-        .background_style(&WHITE)
-        .border_style(&BLACK)
-        .draw()?;
-
-    root.present()?;
-    Ok(())
-}
-
-/// Draw cross validation r2 score for each iteraion
-pub fn draw_r2_scores(r2: Vec<f64>, path: String) -> Result<(), Box<dyn Error>> {
-    let n = r2.len();
-    let mean = r2.iter().fold(0.0f64, |mean, &val| mean + val / n as f64);
-    let root = BitMapBackend::new(&path, (1024, 768)).into_drawing_area();
-    root.fill(&WHITE)?;
-
-    let mut chart = ChartBuilder::on(&root)
-        .caption(
-            "Cross Validation R2 Scores",
-            ("Hack", 44, FontStyle::Bold).into_font(),
-        )
-        .margin(20)
-        .x_label_area_size(50)
-        .y_label_area_size(60)
-        .build_cartesian_2d((1..n).into_segmented(), 0.0..1.0)?
-        .set_secondary_coord(1..n, 0.0..1.0);
-
-    chart
-        .configure_mesh()
-        .disable_x_mesh()
-        .y_desc("R2 Scores")
-        .x_desc("Iterations")
-        .axis_desc_style(("Hack", 20))
-        .draw()?;
-
-    let hist = Histogram::vertical(&chart)
-        .style(RED.mix(0.5).filled())
-        .margin(10)
-        .data(r2.iter().enumerate().map(|(i, x)| (i + 1, *x)));
-
-    chart.draw_series(hist)?;
-
-    chart
-        .draw_secondary_series(LineSeries::new(
-            r2.iter().enumerate().map(|(i, _)| (i + 1, mean)),
-            BLUE.filled().stroke_width(2),
-        ))?
-        .label(format!("mean loss: {:.3}", mean))
+        .label(format!("mean: {:.3}", mean))
         .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
 
     chart
@@ -199,79 +151,79 @@ pub fn draw_r2_scores(r2: Vec<f64>, path: String) -> Result<(), Box<dyn Error>> 
 }
 
 /// Draw confusion matrix
-pub fn draw_confustion(matrix: [[i32; 2]; 2], path: String) -> Result<(), Box<dyn Error>> {
-    let root = BitMapBackend::new(&path, (1024, 768)).into_drawing_area();
+pub fn draw_confustion(matrix_vec: Vec<[[i32; 2]; 2]>, path: String) -> Result<(), Box<dyn Error>> {
+    let root = BitMapBackend::new(&path, (2000, 1000)).into_drawing_area();
     root.fill(&WHITE)?;
+    // hardcode for 10 iteraions
+    let drawing_areas = root.split_evenly((2, 5));
+    let mut matrix_iter = matrix_vec.iter();
 
-    let mut chart = ChartBuilder::on(&root)
-        .caption(
-            "Confusion Matrix",
-            ("Hack", 44, FontStyle::Bold).into_font(),
-        )
-        .margin(20)
-        .build_cartesian_2d(0i32..2i32, 2i32..0i32)?
-        .set_secondary_coord(0f64..2f64, 2f64..0f64);
-
-    chart
-        .configure_mesh()
-        .disable_axes()
-        .max_light_lines(4)
-        .disable_x_mesh()
-        .disable_y_mesh()
-        .label_style(("Hack", 20))
-        .draw()?;
-
-    chart.draw_series(
-        matrix
-            .iter()
-            .zip(0..)
-            .map(|(l, y)| l.iter().zip(0..).map(move |(v, x)| (x, y, v)))
-            .flatten()
-            .map(|(x, y, v)| {
-                Rectangle::new(
-                    [(x, y), (x + 1, y + 1)],
-                    HSLColor(
-                        240.0 / 360.0 - 240.0 / 360.0 * (*v as f64 / 20.0),
-                        0.7,
-                        0.1 + 0.4 * *v as f64 / 20.0,
-                    )
-                    .filled(),
+    for (drawing_area, idx) in drawing_areas.iter().zip(1..) {
+        if let Some(matrix) = matrix_iter.next() {
+            let mut chart = ChartBuilder::on(&drawing_area)
+                .caption(
+                    format!("Confusion Matrix {}", idx),
+                    ("Hack", 32, FontStyle::Bold).into_font(),
                 )
-            }),
-    )?;
+                .margin(20)
+                .build_cartesian_2d(0i32..2i32, 2i32..0i32)?
+                .set_secondary_coord(0f64..2f64, 2f64..0f64);
 
-    chart.draw_secondary_series(
-        matrix
-            .iter()
-            .zip(0..)
-            .map(|(l, y)| l.iter().zip(0..).map(move |(v, x)| (x, y, v)))
-            .flatten()
-            .map(|(x, y, v)| {
-                let text: String = if x == 0 && y == 0 {
-                    format!["TP:{}", v]
-                } else if x == 1 && y == 0 {
-                    format!["FP:{}", v]
-                } else if x == 0 && y == 1 {
-                    format!["FN:{}", v]
-                } else {
-                    format!["TN:{}", v]
-                };
+            chart
+                .configure_mesh()
+                .disable_axes()
+                .max_light_lines(4)
+                .disable_x_mesh()
+                .disable_y_mesh()
+                .label_style(("Hack", 20))
+                .draw()?;
 
-                Text::new(
-                    text,
-                    ((2.0 * x as f64 + 0.9) / 2.0, (2.0 * y as f64 + 1.0) / 2.0),
-                    "Hack".into_font().resize(30.0).color(&WHITE),
-                )
-            }),
-    )?;
+            chart.draw_series(
+                matrix
+                    .iter()
+                    .zip(0..)
+                    .map(|(l, y)| l.iter().zip(0..).map(move |(v, x)| (x, y, v)))
+                    .flatten()
+                    .map(|(x, y, v)| {
+                        Rectangle::new(
+                            [(x, y), (x + 1, y + 1)],
+                            HSLColor(
+                                240.0 / 360.0 - 240.0 / 360.0 * (*v as f64 / 20.0),
+                                0.7,
+                                0.1 + 0.4 * *v as f64 / 20.0,
+                            )
+                            .filled(),
+                        )
+                    }),
+            )?;
+
+            chart.draw_secondary_series(
+                matrix
+                    .iter()
+                    .zip(0..)
+                    .map(|(l, y)| l.iter().zip(0..).map(move |(v, x)| (x, y, v)))
+                    .flatten()
+                    .map(|(x, y, v)| {
+                        let text: String = if x == 0 && y == 0 {
+                            format!["TP:{}", v]
+                        } else if x == 1 && y == 0 {
+                            format!["FP:{}", v]
+                        } else if x == 0 && y == 1 {
+                            format!["FN:{}", v]
+                        } else {
+                            format!["TN:{}", v]
+                        };
+
+                        Text::new(
+                            text,
+                            ((2.0 * x as f64 + 0.7) / 2.0, (2.0 * y as f64 + 1.0) / 2.0),
+                            "Hack".into_font().resize(30.0).color(&WHITE),
+                        )
+                    }),
+            )?;
+        }
+    }
 
     root.present()?;
-    Ok(())
-}
-
-#[test]
-fn check() -> Result<(), Box<dyn Error>> {
-    let data = vec![0.944, 0.8, 0.7, 0.6];
-    draw_loss_scores(data, "img/hist.png".to_string())?;
     Ok(())
 }

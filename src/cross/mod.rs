@@ -59,8 +59,9 @@ pub fn cross_fit(
     let mut loss = loss::Loss::mse();
     let epochs = 3000;
 
-    let mut cv_score: Vec<f64> = vec![];
+    let mut accuracy: Vec<f64> = vec![];
     let mut loss_g = graph::LossGraph::new();
+    let mut matrix_vec: Vec<[[i32; 2]; 2]> = vec![];
 
     let start = Instant::now();
     for (j, dt) in dataset.cross_valid_set(0.1).iter().enumerate() {
@@ -101,8 +102,8 @@ pub fn cross_fit(
             valid_loss_vec.push(valid_loss);
 
             if i == epochs - 1 {
-                cv_score.push((matrix[0][0] + matrix[1][1]) as f64 / validation_set.len() as f64);
-                graph::draw_confustion(matrix, format!("{}/cf_{j}.png", img))?;
+                accuracy.push((matrix[0][0] + matrix[1][1]) as f64 / validation_set.len() as f64);
+                matrix_vec.push(matrix);
             }
 
             println!(
@@ -117,9 +118,16 @@ pub fn cross_fit(
     let duration: Duration = start.elapsed();
 
     let mut file = fs::File::create(format!("{}/result.txt", models))?;
-    file.write_all(format!("cv_score: {:?}\n\ntime used: {:?}", cv_score, duration).as_bytes())?;
+    file.write_all(format!("cv_score: {:?}\n\ntime used: {:?}", accuracy, duration).as_bytes())?;
 
     loss_g.draw(format!("img/{}/loss.png", folder))?;
-    graph::draw_loss_scores(cv_score.clone(), format!("{}/cv_score.png", img))?;
+    graph::draw_histogram(
+        accuracy.clone(),
+        "Accuracy",
+        ("Iterations", "Accuracy"),
+        format!("{}/accuracy.png", img),
+    )?;
+    graph::draw_confustion(matrix_vec, format!("{}/confusion_matrix.png", img))?;
+
     Ok(())
 }

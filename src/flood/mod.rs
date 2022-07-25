@@ -85,11 +85,11 @@ pub fn flood_fit(
 
                 for data in validation_set.get_datas() {
                     let result = net.forward(data.inputs.clone());
-                    sum_sqr += 0.5 * (data.labels[0] - result[0]).powi(2);
-                    total_sum_sqr += 0.5 * (data.labels[0] - label_mean).powi(2);
+                    sum_sqr += (data.labels[0] - result[0]).powi(2);
+                    total_sum_sqr += (data.labels[0] - label_mean).powi(2);
                 }
 
-                r2_score.push(1.0 - sum_sqr / total_sum_sqr);
+                r2_score.push(1.0 - (sum_sqr / total_sum_sqr));
                 cv_score.push(valid_loss);
             }
 
@@ -114,7 +114,17 @@ pub fn flood_fit(
     )?;
 
     loss_g.draw(format!("img/{}/loss.png", folder))?;
-    graph::draw_loss_scores(cv_score.clone(), format!("{}/cv_score.png", img))?;
-    graph::draw_r2_scores(r2_score, format!("{}/r2_score.png", img))?;
+    graph::draw_histogram(
+        cv_score,
+        "Cross Validation Loss",
+        ("Iterations", "Validation Loss"),
+        format!("{}/cv_score.png", img),
+    )?;
+    graph::draw_histogram(
+        r2_score,
+        "Cross Validation R2 Scores",
+        ("Iterations", "R2 Scores"),
+        format!("{}/r2_score.png", img),
+    )?;
     Ok(())
 }
