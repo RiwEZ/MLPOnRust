@@ -32,12 +32,11 @@ impl LossGraph {
 
         let min_loss1 = loss_vec.iter().fold(0f64, |min, &val| val.min(min));
         let min_loss2 = valid_loss_vec.iter().fold(0f64, |min, &val| val.min(min));
-        let min_loss = 
-            if min_loss1.min(min_loss2) > 0.0 {
-                0.0
-            } else {
-                min_loss1.min(min_loss2)
-            };
+        let min_loss = if min_loss1.min(min_loss2) > 0.0 {
+            0.0
+        } else {
+            min_loss1.min(min_loss2)
+        };
 
         let mut chart = ChartBuilder::on(&root)
             .caption(
@@ -194,6 +193,77 @@ pub fn draw_r2_scores(r2: Vec<f64>, path: String) -> Result<(), Box<dyn Error>> 
         .background_style(&WHITE)
         .border_style(&BLACK)
         .draw()?;
+
+    root.present()?;
+    Ok(())
+}
+
+/// Draw confusion matrix
+pub fn draw_confustion(matrix: [[i32; 2]; 2], path: String) -> Result<(), Box<dyn Error>> {
+    let root = BitMapBackend::new(&path, (1024, 768)).into_drawing_area();
+    root.fill(&WHITE)?;
+
+    let mut chart = ChartBuilder::on(&root)
+        .caption(
+            "Confusion Matrix",
+            ("Hack", 44, FontStyle::Bold).into_font(),
+        )
+        .margin(20)
+        .build_cartesian_2d(0i32..2i32, 2i32..0i32)?
+        .set_secondary_coord(0f64..2f64, 2f64..0f64);
+
+    chart
+        .configure_mesh()
+        .disable_axes()
+        .max_light_lines(4)
+        .disable_x_mesh()
+        .disable_y_mesh()
+        .label_style(("Hack", 20))
+        .draw()?;
+
+    chart.draw_series(
+        matrix
+            .iter()
+            .zip(0..)
+            .map(|(l, y)| l.iter().zip(0..).map(move |(v, x)| (x, y, v)))
+            .flatten()
+            .map(|(x, y, v)| {
+                Rectangle::new(
+                    [(x, y), (x + 1, y + 1)],
+                    HSLColor(
+                        240.0 / 360.0 - 240.0 / 360.0 * (*v as f64 / 20.0),
+                        0.7,
+                        0.1 + 0.4 * *v as f64 / 20.0,
+                    )
+                    .filled(),
+                )
+            }),
+    )?;
+
+    chart.draw_secondary_series(
+        matrix
+            .iter()
+            .zip(0..)
+            .map(|(l, y)| l.iter().zip(0..).map(move |(v, x)| (x, y, v)))
+            .flatten()
+            .map(|(x, y, v)| {
+                let text: String = if x == 0 && y == 0 {
+                    format!["TP:{}", v]
+                } else if x == 1 && y == 0 {
+                    format!["FP:{}", v]
+                } else if x == 0 && y == 1 {
+                    format!["FN:{}", v]
+                } else {
+                    format!["TN:{}", v]
+                };
+
+                Text::new(
+                    text,
+                    ((2.0 * x as f64 + 0.9) / 2.0, (2.0 * y as f64 + 1.0) / 2.0),
+                    "Hack".into_font().resize(30.0).color(&WHITE),
+                )
+            }),
+    )?;
 
     root.present()?;
     Ok(())

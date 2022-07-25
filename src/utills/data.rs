@@ -120,6 +120,10 @@ pub fn standardization(dataset: &DataSet, mean: f64, std: f64) -> DataSet {
     DataSet::new(datas)
 }
 
+pub fn un_standardization(value: f64, mean: f64, std: f64) -> f64 {
+    value * std + mean
+}
+
 pub fn flood_dataset() -> Result<DataSet, Box<dyn Error>> {
     #[derive(Debug, Deserialize)]
     struct Record {
@@ -168,7 +172,10 @@ pub fn cross_dataset() -> Result<DataSet, Box<dyn Error>> {
         }
         for w in l2.split(" ") {
             let v: f64 = w.parse().unwrap();
+            // class 1 0 -> 1
+            // class 0 1 -> 0
             labels.push(v);
+            break;
         }
         datas.push(Data { inputs, labels });
     }

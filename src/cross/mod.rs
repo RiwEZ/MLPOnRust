@@ -13,11 +13,33 @@ use utills::data;
 use utills::graph;
 use utills::io;
 
-pub fn cross_2_4_2(lr: f64, momentum: f64, folder: &str) -> Result<(), Box<dyn Error>> {
+fn confusion_count(matrix: &mut [[i32; 2]; 2], result: &Vec<f64>, label: &Vec<f64>) {
+    let threshold = 0.5;
+    if result[0] > threshold {
+        // true positive
+        if label[0] == 1.0 {
+            matrix[0][0] += 1
+        } else {
+            // false negative
+            matrix[1][0] += 1
+        }
+    } else if result[0] <= threshold {
+        // true negative
+        if label[0] == 0.0 {
+            matrix[1][1] += 1
+        }
+        // false positive
+        else {
+            matrix[0][1] += 1
+        }
+    }
+}
+
+pub fn cross_2_4_1(lr: f64, momentum: f64, folder: &str) -> Result<(), Box<dyn Error>> {
     fn model() -> Net {
         let mut layers: Vec<model::Layer> = vec![];
         layers.push(Layer::new(2, 4, 1.0, activator::sigmoid()));
-        layers.push(Layer::new(4, 2, 1.0, activator::sigmoid()));
+        layers.push(Layer::new(4, 1, 1.0, activator::sigmoid()));
         Net::from_layers(layers)
     }
 
@@ -34,8 +56,8 @@ pub fn cross_fit(
     let (models, img) = utills::io::check_dir(folder)?;
 
     let dataset = data::cross_dataset()?;
-    let mut loss = loss::Loss::bce();
-    let epochs = 2000;
+    let mut loss = loss::Loss::mse();
+    let epochs = 3000;
 
     let mut cv_score: Vec<f64> = vec![];
     let mut loss_g = graph::LossGraph::new();
@@ -67,16 +89,11 @@ pub fn cross_fit(
             loss_vec.push(running_loss);
 
             let mut valid_loss: f64 = 0.0;
-            let mut correct_predict = 0;
+            let mut matrix = [[0, 0], [0, 0]];
             for data in validation_set.get_datas() {
                 let result = net.forward(data.inputs.clone());
-                
-                if result[0] > 0.5 && data.labels.clone()[0] == 1.0 {
-                    correct_predict += 1;
-                }
-                else if result[0] <= 0.5 && data.labels.clone()[1] == 0.0 {
-                    correct_predict += 1;
-                }
+
+                confusion_count(&mut matrix, &result, &data.labels);
 
                 valid_loss += loss.criterion(result, data.labels.clone());
             }
@@ -84,7 +101,8 @@ pub fn cross_fit(
             valid_loss_vec.push(valid_loss);
 
             if i == epochs - 1 {
-                cv_score.push(correct_predict as f64/validation_set.len() as f64);
+                cv_score.push((matrix[0][0] + matrix[1][1]) as f64 / validation_set.len() as f64);
+                graph::draw_confustion(matrix, format!("{}/cf_{j}.png", img))?;
             }
 
             println!(
