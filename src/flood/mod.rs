@@ -25,6 +25,18 @@ pub fn flood_8_4_1(lr: f64, momentum: f64, folder: &str) -> Result<(), Box<dyn E
     Ok(())
 }
 
+pub fn flood_8_8_1(lr: f64, momentum: f64, folder: &str) -> Result<(), Box<dyn Error>> {
+    fn model() -> Net {
+        let mut layers: Vec<model::Layer> = vec![];
+        layers.push(Layer::new(8, 8, 1.0, activator::sigmoid()));
+        layers.push(Layer::new(8, 1, 1.0, activator::linear()));
+        Net::from_layers(layers)
+    }
+
+    flood_fit(&model, lr, momentum, folder)?;
+    Ok(())
+}
+
 pub fn flood_fit(
     model: &dyn Fn() -> Net,
     lr: f64,
@@ -56,9 +68,9 @@ pub fn flood_fit(
             let mut running_loss: f64 = 0.0;
 
             for data in training_set.get_shuffled() {
-                let result = net.forward(data.inputs.clone());
+                let result = net.forward(&data.inputs);
 
-                running_loss += loss.criterion(result, data.labels.clone());
+                running_loss += loss.criterion(&result, &data.labels);
                 loss.backward(&mut net.layers);
 
                 net.update(lr, momentum);
@@ -68,8 +80,8 @@ pub fn flood_fit(
 
             let mut valid_loss: f64 = 0.0;
             for data in validation_set.get_datas() {
-                let result = net.forward(data.inputs.clone());
-                valid_loss += loss.criterion(result, data.labels.clone());
+                let result = net.forward(&data.inputs);
+                valid_loss += loss.criterion(&result, &data.labels);
             }
             valid_loss /= validation_set.get_datas().len() as f64;
             valid_loss_vec.push(valid_loss);
@@ -84,7 +96,7 @@ pub fn flood_fit(
                 let mut sum_sqr = 0f64;
 
                 for data in validation_set.get_datas() {
-                    let result = net.forward(data.inputs.clone());
+                    let result = net.forward(&data.inputs);
                     sum_sqr += (data.labels[0] - result[0]).powi(2);
                     total_sum_sqr += (data.labels[0] - label_mean).powi(2);
                 }

@@ -79,9 +79,9 @@ pub fn cross_fit(
             let mut running_loss: f64 = 0.0;
 
             for data in training_set.get_shuffled() {
-                let result = net.forward(data.inputs.clone());
+                let result = net.forward(&data.inputs);
 
-                running_loss += loss.criterion(result, data.labels.clone());
+                running_loss += loss.criterion(&result, &data.labels);
                 loss.backward(&mut net.layers);
 
                 net.update(lr, momentum);
@@ -92,11 +92,11 @@ pub fn cross_fit(
             let mut valid_loss: f64 = 0.0;
             let mut matrix = [[0, 0], [0, 0]];
             for data in validation_set.get_datas() {
-                let result = net.forward(data.inputs.clone());
+                let result = net.forward(&data.inputs);
 
                 confusion_count(&mut matrix, &result, &data.labels);
 
-                valid_loss += loss.criterion(result, data.labels.clone());
+                valid_loss += loss.criterion(&result, &data.labels);
             }
             valid_loss /= validation_set.get_datas().len() as f64;
             valid_loss_vec.push(valid_loss);

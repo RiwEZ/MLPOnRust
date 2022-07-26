@@ -63,7 +63,7 @@ impl Layer {
         }
     }
 
-    pub fn forward(&mut self, inputs: Vec<f64>) -> Vec<f64> {
+    pub fn forward(&mut self, inputs: &Vec<f64>) -> Vec<f64> {
         if inputs.len() != self.inputs.len() {
             panic!("forward: input size is wrong");
         }
@@ -77,7 +77,7 @@ impl Layer {
             self.outputs[j] = sum;
             result.push((self.act.func)(sum));
         }
-        self.inputs = inputs;
+        self.inputs = inputs.clone();
         result
     }
 
@@ -168,10 +168,10 @@ impl Net {
         }
     }
 
-    pub fn forward(&mut self, input: Vec<f64>) -> Vec<f64> {
+    pub fn forward(&mut self, input: &Vec<f64>) -> Vec<f64> {
         let mut result = self.layers[0].forward(input);
         for l in 1..self.layers.len() {
-            result = self.layers[l].forward(result.clone());
+            result = self.layers[l].forward(&result);
         }
         result
     }
@@ -215,7 +215,7 @@ mod tests {
             }
         }
 
-        assert_eq!(linear.forward(vec![1.0, 1.0])[0], 0.982013790037908442);
+        assert_eq!(linear.forward(&vec![1.0, 1.0])[0], 0.982013790037908442);
         assert_eq!(linear.outputs[0], 4.0);
     }
 
@@ -228,7 +228,7 @@ mod tests {
                 linear.w[j][i] = (j as f64) + 1.0;
             }
         }
-        let result = linear.forward(vec![0.0, 1.0]);
+        let result = linear.forward(&vec![0.0, 1.0]);
         assert_eq!(result[0], 0.9525741268224334);
         assert_eq!(result[1], 0.9820137900379084);
         assert_eq!(linear.outputs[0], 3.0);

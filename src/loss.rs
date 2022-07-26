@@ -42,7 +42,7 @@ impl Loss {
         }
     }
 
-    pub fn criterion(&mut self, outputs: Vec<f64>, desired: Vec<f64>) -> f64 {
+    pub fn criterion(&mut self, outputs: &Vec<f64>, desired: &Vec<f64>) -> f64 {
         if outputs.len() != desired.len() {
             panic!("outputs size is not equal to desired size");
         }
@@ -51,8 +51,8 @@ impl Loss {
         for i in 0..outputs.len() {
             loss += (self.func)(outputs[i], desired[i]);
         }
-        self.outputs = outputs;
-        self.desired = desired;
+        self.outputs = outputs.clone();
+        self.desired = desired.clone();
         loss
     }
 
@@ -128,12 +128,12 @@ mod tests {
     fn test_mse() {
         let mut loss = Loss::mse();
 
-        let l = loss.criterion(vec![2.0, 1.0, 0.0], vec![0.0, 1.0, 2.0]);
+        let l = loss.criterion(&vec![2.0, 1.0, 0.0], &vec![0.0, 1.0, 2.0]);
         assert_eq!(l, 4.0 / 3.0);
 
         loss.criterion(
-            vec![34.0, 37.0, 44.0, 47.0, 48.0],
-            vec![37.0, 40.0, 46.0, 44.0, 46.0],
+            &vec![34.0, 37.0, 44.0, 47.0, 48.0],
+            &vec![37.0, 40.0, 46.0, 44.0, 46.0],
         );
         assert_eq!(l, 3.5);
     }
