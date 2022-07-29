@@ -60,13 +60,8 @@ impl Layer {
     }
 
     pub fn update(&mut self, lr: f64, momentum: f64) {
-        /*         for j in 0..self.w.len() {
-            self.b[j] -= momentum * self.prev_local_grads[j] + lr * self.local_grads[j]; // update each neuron bias
-            for i in 0..self.w[j].len() {
-                self.w[j][i] -= momentum * self.prev_grads[j][i] + lr * self.grads[j][i];
-                // update each weights
-            }
-        } */
+        self.b = &self.b - (momentum * &self.prev_local_grads) + (lr * &self.local_grads);
+        self.w = &self.w - (momentum * &self.prev_grads) + (lr * &self.grads);
     }
 }
 
