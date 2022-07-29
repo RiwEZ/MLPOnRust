@@ -1,4 +1,4 @@
-//! Contains training code for variations of flood dataset models.
+//! Contains training code for variations of flood dataset mode&ls.
 use super::activator;
 use super::loss;
 use super::model;
@@ -47,13 +47,17 @@ pub fn flood_fit(
 
     let dataset = data::flood_dataset()?;
     let mut loss = loss::Loss::mse();
-    let epochs = 1000;
+    let epochs = 1;
 
     let mut cv_score: Vec<f64> = vec![];
     let mut r2_score: Vec<f64> = vec![];
     let mut loss_g = graph::LossGraph::new();
     let start = Instant::now();
     for (j, dt) in dataset.cross_valid_set(0.1).iter().enumerate() {
+        if j > 0 {
+            break;
+        }
+
         // creating a model
         let mut net = model();
 
@@ -67,6 +71,7 @@ pub fn flood_fit(
         for i in 0..epochs {
             let mut running_loss: f64 = 0.0;
 
+
             for data in training_set.get_shuffled() {
                 let result = net.forward(&data.inputs);
 
@@ -77,6 +82,8 @@ pub fn flood_fit(
             }
             running_loss /= training_set.len() as f64;
             loss_vec.push(running_loss);
+
+            println!("{:?}", net.layers[1].grads);
 
             let mut valid_loss: f64 = 0.0;
             for data in validation_set.get_datas() {

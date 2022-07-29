@@ -78,38 +78,31 @@ impl Loss {
             layers[l].prev_grads = layers[l].grads.clone();
 
             let a_der = layers[l].outputs.map(|x| (layers[l].act.der)(*x)); // apply derivative of act func on outputs
+            let local_grad = if l == layers.len() - 1 {
+                // output layer
+                let a = self.outputs.map(|x| (layers[l].act.func)(*x)); // apply act func on outputs
+                (self.der)(&a, &self.desired) * &a_der
+            } else {
+                // hidden layer
+                // calculate local_grad based on previous local_grad
+                layers[l + 1].w.t().dot(&layers[l + 1].local_grads) * &a_der
+            };
+
+            layers[l].local_grads = local_grad.clone();
+
+            let mut grads = Array2::<f64>::zeros(layers[l].grads.dim());
             let previous_a = if l > 0 {
                 layers[l - 1].outputs.map(|x| (layers[l - 1].act.func)(*x))
             } else {
                 layers[l].inputs.clone()
             };
-            let mut grads = Array2::<f64>::zeros(layers[l].grads.dim());
-
-            // output layer
-            if l == layers.len() - 1 {
-                // compute gradient
-                let a = self.outputs.map(|x| (layers[l].act.func)(*x)); // apply act func on outputs
-                let local_grad = (self.der)(&a, &self.desired) * &a_der;
-                layers[l].local_grads = local_grad.clone();
-
-                for (j, mut row) in grads.axis_iter_mut(Axis(0)).enumerate() {
-                    for (k, col) in row.iter_mut().enumerate() {
-                        *col = previous_a[k] * local_grad[j];
-                    }
-                }
-                continue;
-            }
             
-            // hidden layer
-            // calculate local_grad based on previous local_grad
-            let local_grad = layers[l + 1].w.t().dot(&layers[l + 1].local_grads) * &a_der;
-            layers[l].local_grads = local_grad.clone();
-
             for (j, mut row) in grads.axis_iter_mut(Axis(0)).enumerate() {
                 for (k, col) in row.iter_mut().enumerate() {
                     *col = previous_a[k] * local_grad[j]
                 }
             }
+            layers[l].grads = grads;
         }
     }
 }
