@@ -62,7 +62,7 @@ impl Loss {
             if l == layers.len() - 1 {
                 for j in 0..layers[l].outputs.len() {
                     // compute grads
-                    let local_grad = (self.der)(self.outputs[j], self.desired[j])
+                    let local_grad = (self.der)((layers[l].act.func)(self.outputs[j]), self.desired[j])
                         * (layers[l].act.der)(layers[l].outputs[j]);
 
                     layers[l].prev_local_grads = layers[l].local_grads.clone(); // copied previous grad before update
@@ -129,13 +129,13 @@ mod tests {
         let mut loss = Loss::mse();
 
         let l = loss.criterion(&vec![2.0, 1.0, 0.0], &vec![0.0, 1.0, 2.0]);
-        assert_eq!(l, 4.0 / 3.0);
+        assert_eq!(l, 4.0);
 
         loss.criterion(
             &vec![34.0, 37.0, 44.0, 47.0, 48.0],
             &vec![37.0, 40.0, 46.0, 44.0, 46.0],
         );
-        assert_eq!(l, 3.5);
+        assert_eq!(l, 4.0);
     }
 
     #[test]
