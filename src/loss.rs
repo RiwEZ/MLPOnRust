@@ -58,6 +58,8 @@ impl Loss {
 
     pub fn backward(&self, layers: &mut Vec<model::Layer>) {
         for l in (0..layers.len()).rev() {
+            layers[l].prev_local_grads = layers[l].local_grads.clone(); // copied previous grad before update
+            layers[l].prev_grads = layers[l].grads.clone();
             // output layer
             if l == layers.len() - 1 {
                 for j in 0..layers[l].outputs.len() {
@@ -65,10 +67,8 @@ impl Loss {
                     let local_grad = (self.der)((layers[l].act.func)(self.outputs[j]), self.desired[j])
                         * (layers[l].act.der)(layers[l].outputs[j]);
 
-                    layers[l].prev_local_grads = layers[l].local_grads.clone(); // copied previous grad before update
                     layers[l].local_grads[j] = local_grad;
 
-                    layers[l].prev_grads = layers[l].grads.clone();
                     // set grads for each weight
                     for k in 0..(layers[l - 1].outputs.len()) {
                         layers[l].grads[j][k] =
@@ -87,11 +87,8 @@ impl Loss {
                     }
                 }
                 local_grad = (layers[l].act.der)(layers[l].outputs[j]) * local_grad;
-
-                layers[l].prev_local_grads = layers[l].local_grads.clone(); // copied previous grad before update
                 layers[l].local_grads[j] = local_grad;
 
-                layers[l].prev_grads = layers[l].grads.clone();
                 // set grads for each weight
                 if l == 0 {
                     for k in 0..layers[l].inputs.len() {
