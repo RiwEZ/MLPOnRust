@@ -67,7 +67,7 @@ impl DataSet {
 
     pub fn mean(&self) -> f64 {
         let mut data_points: Vec<f64> = vec![];
-        for mut dt in self.datas.clone() {
+        for dt in self.datas.clone() {
             data_points.append(&mut dt.inputs.to_vec());
             data_points.append(&mut dt.labels.to_vec());
         }
@@ -161,7 +161,7 @@ pub fn cross_dataset() -> Result<DataSet, Box<dyn Error>> {
     let mut lines = read_lines("data/cross.pat")?;
     while let (Some(_), Some(Ok(l1)), Some(Ok(l2))) = (lines.next(), lines.next(), lines.next()) {
         let mut inputs = Array1::zeros(2);
-        let mut labels = Array1::zeros(2);
+        let mut labels = Array1::zeros(1);
         for (i, w) in l1.split(" ").into_iter().enumerate() {
             let v: f64 = w.parse().unwrap();
             inputs[i] = v;
@@ -180,15 +180,13 @@ pub fn cross_dataset() -> Result<DataSet, Box<dyn Error>> {
 
 #[test]
 fn temp_test() -> Result<(), Box<dyn Error>> {
-    /*
     let dt = flood_dataset()?.cross_valid_set(0.1);
     let training_set = &dt[0].0;
     let validation_set = &dt[0].1;
 
     println!("mean: {}, std: {}", validation_set.mean(), validation_set.std());
     println!("\n{:?}", validation_set.get_datas());
-    println!("\n\n{:?}", standardization(validation_set).get_datas());
-     */
+    //println!("\n\n{:?}", standardization(validation_set).get_datas());
 
     /*
     if let Ok(dt) = cross_dataset() {
@@ -197,4 +195,16 @@ fn temp_test() -> Result<(), Box<dyn Error>> {
     */
 
     Ok(())
+}
+
+#[test]
+fn flood_mean() -> Result<(), Box<dyn Error>> {
+    let dt = flood_dataset()?;
+    let mean = dt.mean();
+    let std = dt.std();
+    println!("{}", dt.mean());
+    println!("{}", dt.std());
+    println!("{:?}", standardization(&dt, mean, std).get_datas());
+    Ok(())
+
 }

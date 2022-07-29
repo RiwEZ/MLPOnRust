@@ -60,8 +60,11 @@ impl Layer {
     }
 
     pub fn update(&mut self, lr: f64, momentum: f64) {
-        self.b = &self.b - (momentum * &self.prev_local_grads) + (lr * &self.local_grads);
-        self.w = &self.w - (momentum * &self.prev_grads) + (lr * &self.grads);
+        let delta_b = (momentum * &self.prev_local_grads) + (lr * &self.local_grads);
+        let delta_w = (momentum * &self.prev_grads) + (lr * &self.grads);
+
+        self.b = &self.b - delta_b;
+        self.w = &self.w - delta_w;
     }
 }
 
