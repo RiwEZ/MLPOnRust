@@ -1,12 +1,14 @@
 use super::io::read_lines;
+use ndarray::prelude::*;
+use ndarray::Array1;
 use rand::prelude::SliceRandom;
 use serde::Deserialize;
 use std::error::Error;
 
 #[derive(Debug, Clone)]
 pub struct Data {
-    pub inputs: Vec<f64>,
-    pub labels: Vec<f64>,
+    pub inputs: Array1<f64>,
+    pub labels: Array1<f64>,
 }
 pub struct DataSet {
     datas: Vec<Data>,
@@ -53,8 +55,8 @@ impl DataSet {
         let mean = self.mean();
         let mut data_points: Vec<f64> = vec![];
         for mut dt in self.datas.clone() {
-            data_points.append(&mut dt.inputs);
-            data_points.append(&mut dt.labels);
+            data_points.append(&mut dt.inputs.to_vec());
+            data_points.append(&mut dt.labels.to_vec());
         }
         let n = data_points.len() as f64;
         data_points
@@ -66,8 +68,8 @@ impl DataSet {
     pub fn mean(&self) -> f64 {
         let mut data_points: Vec<f64> = vec![];
         for mut dt in self.datas.clone() {
-            data_points.append(&mut dt.inputs);
-            data_points.append(&mut dt.labels);
+            data_points.append(&mut dt.inputs.to_vec());
+            data_points.append(&mut dt.labels.to_vec());
         }
         let n = data_points.len() as f64;
         data_points.iter().fold(0.0f64, |mean, &val| mean + val / n)
@@ -94,8 +96,8 @@ pub fn xor_dataset() -> DataSet {
     let mut datas: Vec<Data> = vec![];
     for i in 0..4 {
         datas.push(Data {
-            inputs: inputs[i].to_vec(),
-            labels: labels[i].to_vec(),
+            inputs: arr1(&inputs[i]),
+            labels: arr1(&labels[i]),
         });
     }
 
@@ -106,15 +108,8 @@ pub fn standardization(dataset: &DataSet, mean: f64, std: f64) -> DataSet {
     let mut datas: Vec<Data> = vec![];
 
     for dt in dataset.get_datas() {
-        let mut inputs: Vec<f64> = vec![];
-        let mut labels: Vec<f64> = vec![];
-
-        for x in dt.inputs {
-            inputs.push((x - mean) / std);
-        }
-        for x in dt.labels {
-            labels.push((x - mean) / std);
-        }
+        let inputs = dt.inputs.map(|x| (x - mean) / std);
+        let labels = dt.labels.map(|x| (x - mean) / std);
         datas.push(Data { inputs, labels });
     }
     DataSet::new(datas)
@@ -142,19 +137,20 @@ pub fn flood_dataset() -> Result<DataSet, Box<dyn Error>> {
     let mut reader = csv::Reader::from_path("data/flood_dataset.csv")?;
     for record in reader.deserialize() {
         let record: Record = record?;
-        let mut inputs: Vec<f64> = vec![];
-        // station 1
-        inputs.push(record.s1_t3);
-        inputs.push(record.s1_t2);
-        inputs.push(record.s1_t1);
-        inputs.push(record.s1_t0);
-        // station 2
-        inputs.push(record.s2_t3);
-        inputs.push(record.s2_t2);
-        inputs.push(record.s2_t1);
-        inputs.push(record.s2_t0);
+        let mut inputs = Array1::zeros(8);
 
-        let labels: Vec<f64> = vec![f64::from(record.t7)];
+        // station 1
+        inputs[0] = record.s1_t3;
+        inputs[1] = record.s1_t2;
+        inputs[2] = record.s1_t1;
+        inputs[3] = record.s1_t0;
+        // station 2
+        inputs[4] = record.s2_t3;
+        inputs[5] = record.s2_t2;
+        inputs[6] = record.s2_t1;
+        inputs[7] = record.s2_t0;
+
+        let labels = arr1(&[record.t7]);
         datas.push(Data { inputs, labels });
     }
     Ok(DataSet::new(datas))
@@ -164,17 +160,17 @@ pub fn cross_dataset() -> Result<DataSet, Box<dyn Error>> {
     let mut datas: Vec<Data> = vec![];
     let mut lines = read_lines("data/cross.pat")?;
     while let (Some(_), Some(Ok(l1)), Some(Ok(l2))) = (lines.next(), lines.next(), lines.next()) {
-        let mut inputs: Vec<f64> = vec![];
-        let mut labels: Vec<f64> = vec![];
-        for w in l1.split(" ") {
+        let mut inputs = Array1::zeros(2);
+        let mut labels = Array1::zeros(2);
+        for (i, w) in l1.split(" ").into_iter().enumerate() {
             let v: f64 = w.parse().unwrap();
-            inputs.push(v);
+            inputs[i] = v;
         }
-        for w in l2.split(" ") {
+        for (i, w) in l2.split(" ").into_iter().enumerate() {
             let v: f64 = w.parse().unwrap();
             // class 1 0 -> 1
             // class 0 1 -> 0
-            labels.push(v);
+            labels[i] = v;
             break;
         }
         datas.push(Data { inputs, labels });

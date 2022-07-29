@@ -1,59 +1,45 @@
 use crate::activator;
+use ndarray::prelude::*;
+use ndarray::Array;
+use ndarray_rand::rand_distr::Uniform;
+use ndarray_rand::RandomExt;
 
 #[derive(Debug)]
 pub struct Layer {
-    pub inputs: Vec<f64>,
-    pub outputs: Vec<f64>, // need to save this for backward pass
-    pub w: Vec<Vec<f64>>,
-    pub b: Vec<f64>,
-    pub grads: Vec<Vec<f64>>,
-    pub prev_grads: Vec<Vec<f64>>,
-    pub local_grads: Vec<f64>,
-    pub prev_local_grads: Vec<f64>,
+    pub inputs: Array1<f64>,
+    pub outputs: Array1<f64>, // need to save this for backward pass
+    pub w: Array2<f64>,
+    pub b: Array1<f64>,
+    pub grads: Array2<f64>,
+    pub prev_grads: Array2<f64>,
+    pub local_grads: Array1<f64>,
+    pub prev_local_grads: Array1<f64>,
     pub act: activator::ActivationContainer,
 }
 
 impl Layer {
     pub fn new(
-        input_features: u64,
-        output_features: u64,
+        input_features: usize,
+        output_features: usize,
         bias: f64,
         act: activator::ActivationContainer,
     ) -> Layer {
         // initialize weights matrix
-        let mut weights: Vec<Vec<f64>> = vec![];
-        let mut inputs: Vec<f64> = vec![];
-        let mut outputs: Vec<f64> = vec![];
-        let mut grads: Vec<Vec<f64>> = vec![];
-        let mut local_grads: Vec<f64> = vec![];
-        let mut prev_grads: Vec<Vec<f64>> = vec![];
-        let mut prev_local_grads: Vec<f64> = vec![];
-        let mut b: Vec<f64> = vec![];
+        let w = Array::random((output_features, input_features), Uniform::new(-1.0, 1.0));
+        let b = Array::<f64, _>::from_elem(output_features, bias);
+        let inputs = Array::<f64, _>::zeros(input_features);
+        let outputs = Array::<f64, _>::zeros(output_features);
 
-        for _ in 0..output_features {
-            outputs.push(0.0);
-            local_grads.push(0.0);
-            prev_local_grads.push(0.0);
-            b.push(bias);
+        let local_grads = Array1::zeros(output_features);
+        let prev_local_grads = Array1::zeros(output_features);
 
-            let mut w: Vec<f64> = vec![];
-            let mut g: Vec<f64> = vec![];
-            for _ in 0..input_features {
-                if (inputs.len() as u64) < input_features {
-                    inputs.push(0.0);
-                }
-                g.push(0.0);
-                // random both positive and negative weight
-                w.push(2f64 * rand::random::<f64>() - 1f64);
-            }
-            weights.push(w);
-            grads.push(g.clone());
-            prev_grads.push(g);
-        }
+        let grads = Array2::zeros((output_features, input_features));
+        let prev_grads = Array2::zeros((output_features, input_features));
+
         Layer {
             inputs,
             outputs,
-            w: weights,
+            w,
             b,
             grads,
             prev_grads,
@@ -63,41 +49,24 @@ impl Layer {
         }
     }
 
-    pub fn forward(&mut self, inputs: &Vec<f64>) -> Vec<f64> {
+    pub fn forward(&mut self, inputs: &Array1<f64>) -> Array1<f64> {
         if inputs.len() != self.inputs.len() {
             panic!("forward: input size is wrong");
         }
-        let mut result: Vec<f64> = vec![];
-        for j in 0..self.outputs.len() {
-            let mut sum: f64 = 0.0;
-            // loop through input and add w*x + b to sum
-            for i in 0..inputs.len() {
-                sum += (self.w[j][i] * inputs[i]) + self.b[j]
-            }
-            self.outputs[j] = sum;
-            result.push((self.act.func)(sum));
-        }
+        let result = &inputs.dot(&self.w.t()) + &self.b;
+        self.outputs = result.clone();
         self.inputs = inputs.clone();
-        result
+        result.map(|x| (self.act.func)(*x))
     }
 
     pub fn update(&mut self, lr: f64, momentum: f64) {
-        for j in 0..self.w.len() {
+        /*         for j in 0..self.w.len() {
             self.b[j] -= momentum * self.prev_local_grads[j] + lr * self.local_grads[j]; // update each neuron bias
             for i in 0..self.w[j].len() {
                 self.w[j][i] -= momentum * self.prev_grads[j][i] + lr * self.grads[j][i];
                 // update each weights
             }
-        }
-    }
-
-    pub fn zero_grad(&mut self) {
-        for j in 0..self.outputs.len() {
-            self.local_grads[j] = 0.0;
-            for i in 0..self.grads[j].len() {
-                self.grads[j][i] = 0.0;
-            }
-        }
+        } */
     }
 }
 
@@ -149,7 +118,7 @@ impl Net {
         Net { layers }
     }
 
-    pub fn new(architecture: Vec<u64>) -> Net {
+    pub fn new(architecture: Vec<usize>) -> Net {
         let mut layers: Vec<Layer> = vec![];
         for i in 1..architecture.len() {
             layers.push(Layer::new(
@@ -162,13 +131,7 @@ impl Net {
         Net { layers }
     }
 
-    pub fn zero_grad(&mut self) {
-        for l in 0..self.layers.len() {
-            self.layers[l].zero_grad();
-        }
-    }
-
-    pub fn forward(&mut self, input: &Vec<f64>) -> Vec<f64> {
+    pub fn forward(&mut self, input: &Array1<f64>) -> Array1<f64> {
         let mut result = self.layers[0].forward(input);
         for l in 1..self.layers.len() {
             result = self.layers[l].forward(&result);
@@ -189,7 +152,7 @@ mod tests {
 
     #[test]
     fn test_linear_new() {
-        let linear = Layer::new(2, 3, 1.0, activator::linear());
+        /*         let linear = Layer::new(2, 3, 1.0, activator::linear());
         assert_eq!(linear.outputs.len(), 3);
         assert_eq!(linear.inputs.len(), 2);
 
@@ -202,36 +165,31 @@ mod tests {
         assert_eq!(linear.grads[0].len(), 2);
         assert_eq!(linear.prev_grads[0].len(), 2);
         assert_eq!(linear.local_grads.len(), 3);
-        assert_eq!(linear.prev_local_grads.len(), 3);
+        assert_eq!(linear.prev_local_grads.len(), 3); */
     }
 
     #[test]
     fn test_linear_forward1() {
         let mut linear = Layer::new(2, 1, 1.0, activator::sigmoid());
+        linear.w = linear.w.map(|_| 1.0);
 
-        for j in 0..linear.w.len() {
-            for i in 0..linear.w[j].len() {
-                linear.w[j][i] = 1.0;
-            }
-        }
-
-        assert_eq!(linear.forward(&vec![1.0, 1.0])[0], 0.982013790037908442);
-        assert_eq!(linear.outputs[0], 4.0);
+        assert_eq!(linear.forward(&arr1(&[1.0, 1.0]))[0], 0.9525741268224334);
+        assert_eq!(linear.outputs[0], 3.0);
     }
 
     #[test]
     fn test_linear_forward2() {
         let mut linear = Layer::new(2, 2, 1.0, activator::sigmoid());
 
-        for j in 0..linear.w.len() {
-            for i in 0..linear.w[j].len() {
-                linear.w[j][i] = (j as f64) + 1.0;
-            }
+        for j in 0..2 {
+            linear.w[[j, 0]] = (j as f64) + 1.0;
+            linear.w[[j, 1]] = (j as f64) + 1.0;
         }
-        let result = linear.forward(&vec![0.0, 1.0]);
-        assert_eq!(result[0], 0.9525741268224334);
-        assert_eq!(result[1], 0.9820137900379084);
-        assert_eq!(linear.outputs[0], 3.0);
-        assert_eq!(linear.outputs[1], 4.0);
+
+        let result = linear.forward(&arr1(&[0.0, 1.0]));
+        assert_eq!(result[0], 0.8807970779778823);
+        assert_eq!(result[1], 0.9525741268224334);
+        assert_eq!(linear.outputs[0], 2.0);
+        assert_eq!(linear.outputs[1], 3.0);
     }
 }

@@ -1,5 +1,8 @@
 use crate::activator;
 use crate::model;
+use ndarray::Array1;
+use ndarray::Array2;
+use ndarray::ArrayBase;
 use serde_json::{json, to_writer_pretty, Value};
 use std::error::Error;
 use std::fs::create_dir;
@@ -56,8 +59,8 @@ where
     for l in json.as_array().unwrap() {
         // default layer activation is simeple linear f(x) = x
         let mut layer = model::Layer::new(
-            l["inputs"].as_u64().unwrap(),
-            l["outputs"].as_u64().unwrap(),
+            l["inputs"].as_u64().unwrap() as usize,
+            l["outputs"].as_u64().unwrap() as usize,
             0.0,
             activator::linear(),
         );
@@ -67,16 +70,10 @@ where
         }
 
         // setting weights and bias
-        let w = l["w"].as_array().unwrap();
-        let b = l["b"].as_array().unwrap();
-        for j in 0..w.len() {
-            layer.b[j] = b[j].as_f64().unwrap();
-            let w_j = w[j].as_array().unwrap();
-            for i in 0..w_j.len() {
-                layer.w[j][i] = w_j[i].as_f64().unwrap();
-            }
-        }
-
+        let w: Array2<f64> = serde_json::from_str(&l["w"].to_string()).unwrap();
+        let b: Array1<f64> = serde_json::from_str(&l["b"].to_string()).unwrap();
+        layer.w = w;
+        layer.b = b;
         layers.push(layer);
     }
 
@@ -103,12 +100,16 @@ mod tests {
     use super::*;
 
     #[test]
-    fn temp_test() -> Result<(), Box<dyn Error>> {
-        /*
+    fn simple_test() -> Result<(), Box<dyn Error>> {
         let net = model::Net::new(vec![2, 2, 2]);
-        save(& net.layers, "models/xor.json".to_string())?;
-        */
-        load("models/xor.json")?;
+        let w = net.layers[0].w.clone();
+        let b = net.layers[0].b.clone();
+
+        save(&net.layers, "models/xor.json".to_string())?;
+
+        let loaded_net = load("models/xor.json")?;
+        assert_eq!(loaded_net.layers[0].w, w);
+        assert_eq!(loaded_net.layers[0].b, b);
         Ok(())
     }
 }

@@ -10,9 +10,12 @@ use utills::data::un_standardization;
 
 fn main() -> Result<(), Box<dyn Error>> {
     //flood::flood_8_4_1(0.01, 0.01, "flood-8-4-1")?; // 1
-    flood::flood_8_4_1(0.01, 0.0, "flood-8-4-1_2")?; // 2
+    //flood::flood_8_4_1(0.01, 0.0, "flood-8-4-1_2")?; // 2
+    //flood::flood_8_4_1(0.001, 0.001, "flood-8-4-1_3")?; // 3
 
     //flood::flood_8_8_1(0.01, 0.01, "flood-8-8-1")?;
+    flood::flood_8_8_1(0.01, 0.01, "flood-8-8-1")?;
+
     //cross::cross_2_4_1(0.01, 0.01, "cross")?;
 
     /*

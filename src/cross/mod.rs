@@ -94,7 +94,7 @@ pub fn cross_fit(
             for data in validation_set.get_datas() {
                 let result = net.forward(&data.inputs);
 
-                confusion_count(&mut matrix, &result, &data.labels);
+                //confusion_count(&mut matrix, &result, &data.labels);
 
                 valid_loss += loss.criterion(&result, &data.labels);
             }
