@@ -64,7 +64,7 @@ impl Loss {
             if l == layers.len() - 1 {
                 for j in 0..layers[l].outputs.len() {
                     // compute grads
-                    let local_grad = (self.der)((layers[l].act.func)(self.outputs[j]), self.desired[j])
+                    let local_grad = (self.der)(self.outputs[j], self.desired[j])
                         * (layers[l].act.der)(layers[l].outputs[j]);
 
                     layers[l].local_grads[j] = local_grad;
@@ -96,8 +96,7 @@ impl Loss {
                     }
                 } else {
                     for k in 0..layers[l - 1].outputs.len() {
-                        layers[l].grads[j][k] = (layers[l].act.func)(layers[l - 1].outputs[k]) * // a(l - 1)
-                            local_grad;
+                        layers[l].grads[j][k] = (layers[l - 1].act.func)(layers[l - 1].outputs[k]) * local_grad;
                     }
                 }
             }
