@@ -1,4 +1,5 @@
 use super::io::read_lines;
+use plotters::data;
 use rand::prelude::SliceRandom;
 use serde::Deserialize;
 use std::error::Error;
@@ -49,13 +50,32 @@ impl DataSet {
         set
     }
 
-    pub fn std(&self) -> f64 {
-        let mean = self.mean();
+    pub fn data_points(&self) -> Vec<f64> {
         let mut data_points: Vec<f64> = vec![];
         for mut dt in self.datas.clone() {
             data_points.append(&mut dt.inputs);
             data_points.append(&mut dt.labels);
         }
+        data_points
+    }
+
+    pub fn max(&self) -> f64 {
+        self
+            .data_points()
+            .iter()
+            .fold(f64::NAN, |max, &v| v.max(max))
+    }
+
+    pub fn min(&self) -> f64 {
+        self
+            .data_points()
+            .iter()
+            .fold(f64::NAN, |min, &v| v.min(min))
+    }
+
+    pub fn std(&self) -> f64 {
+        let mean = self.mean();
+        let data_points = self.data_points();
         let n = data_points.len() as f64;
         data_points
             .iter()
@@ -64,11 +84,7 @@ impl DataSet {
     }
 
     pub fn mean(&self) -> f64 {
-        let mut data_points: Vec<f64> = vec![];
-        for mut dt in self.datas.clone() {
-            data_points.append(&mut dt.inputs);
-            data_points.append(&mut dt.labels);
-        }
+        let data_points = self.data_points();
         let n = data_points.len() as f64;
         data_points.iter().fold(0.0f64, |mean, &val| mean + val / n)
     }
@@ -88,6 +104,36 @@ impl DataSet {
     }
 }
 
+pub fn minmax_norm(dataset: &DataSet, min: f64, max: f64) -> DataSet {
+    let datas: Vec<Data> = dataset
+        .get_datas()
+        .into_iter()
+        .map(|dt| {
+            let inputs: Vec<f64> = dt.inputs.iter().map(|x| (x - min) / (max - min)).collect();
+            let labels: Vec<f64> = dt.labels.iter().map(|x| (x - min) / (max - min)).collect();
+            Data { inputs, labels }
+        })
+        .collect();
+    DataSet::new(datas)
+}
+
+pub fn standardization(dataset: &DataSet, mean: f64, std: f64) -> DataSet {
+    let datas: Vec<Data> = dataset
+        .get_datas()
+        .into_iter()
+        .map(|dt| {
+            let inputs: Vec<f64> = dt.inputs.iter().map(|x| (x - mean) / std).collect();
+            let labels: Vec<f64> = dt.labels.iter().map(|x| (x - mean) / std).collect();
+            Data { inputs, labels }
+        })
+        .collect();
+    DataSet::new(datas)
+}
+
+pub fn un_standardization(value: f64, mean: f64, std: f64) -> f64 {
+    value * std + mean
+}
+
 pub fn xor_dataset() -> DataSet {
     let inputs = vec![[0.0, 0.0], [0.0, 1.0], [1.0, 0.0], [1.0, 1.0]];
     let labels = vec![[0.0], [1.0], [1.0], [0.0]];
@@ -102,30 +148,8 @@ pub fn xor_dataset() -> DataSet {
     DataSet::new(datas)
 }
 
-pub fn standardization(dataset: &DataSet, mean: f64, std: f64) -> DataSet {
-    let mut datas: Vec<Data> = vec![];
-
-    for dt in dataset.get_datas() {
-        let mut inputs: Vec<f64> = vec![];
-        let mut labels: Vec<f64> = vec![];
-
-        for x in dt.inputs {
-            inputs.push((x - mean) / std);
-        }
-        for x in dt.labels {
-            labels.push((x - mean) / std);
-        }
-        datas.push(Data { inputs, labels });
-    }
-    DataSet::new(datas)
-}
-
-pub fn un_standardization(value: f64, mean: f64, std: f64) -> f64 {
-    value * std + mean
-}
-
 pub fn flood_dataset() -> Result<DataSet, Box<dyn Error>> {
-    #[derive(Debug, Deserialize)]
+    #[derive(Deserialize)]
     struct Record {
         s1_t3: f64,
         s1_t2: f64,
@@ -182,23 +206,36 @@ pub fn cross_dataset() -> Result<DataSet, Box<dyn Error>> {
     Ok(DataSet::new(datas))
 }
 
-#[test]
-fn temp_test() -> Result<(), Box<dyn Error>> {
-    /*
-    let dt = flood_dataset()?.cross_valid_set(0.1);
-    let training_set = &dt[0].0;
-    let validation_set = &dt[0].1;
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    println!("mean: {}, std: {}", validation_set.mean(), validation_set.std());
-    println!("\n{:?}", validation_set.get_datas());
-    println!("\n\n{:?}", standardization(validation_set).get_datas());
-     */
+    #[test]
+    fn temp_test() -> Result<(), Box<dyn Error>> {
+        /*
+        let dt = flood_dataset()?.cross_valid_set(0.1);
+        let training_set = &dt[0].0;
+        let validation_set = &dt[0].1;
 
-    /*
-    if let Ok(dt) = cross_dataset() {
-        println!("{:?}", dt.get_datas());
+        println!("mean: {}, std: {}", validation_set.mean(), validation_set.std());
+        println!("\n{:?}", validation_set.get_datas());
+        println!("\n\n{:?}", standardization(validation_set).get_datas());
+         */
+
+        /*
+        if let Ok(dt) = cross_dataset() {
+            println!("{:?}", dt.get_datas());
+        }
+        */
+
+        Ok(())
     }
-    */
 
-    Ok(())
+    #[test]
+    fn test_min_max() -> Result<(), Box<dyn Error>> {
+        let dt = flood_dataset()?;
+        assert_eq!(dt.max(), 628.0);
+        assert_eq!(dt.min(), 95.0);
+        Ok(())
+    }
 }

@@ -96,7 +96,8 @@ impl Loss {
                     }
                 } else {
                     for k in 0..layers[l - 1].outputs.len() {
-                        layers[l].grads[j][k] = (layers[l - 1].act.func)(layers[l - 1].outputs[k]) * local_grad;
+                        layers[l].grads[j][k] =
+                            (layers[l - 1].act.func)(layers[l - 1].outputs[k]) * local_grad;
                     }
                 }
             }

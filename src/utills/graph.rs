@@ -26,12 +26,16 @@ impl LossGraph {
         loss_vec: &Vec<f64>,
         valid_loss_vec: &Vec<f64>,
     ) -> Result<(), Box<dyn Error>> {
-        let max_loss1 = loss_vec.iter().fold(0f64, |max, &val| val.max(max));
-        let max_loss2 = valid_loss_vec.iter().fold(0f64, |max, &val| val.max(max));
+        let max_loss1 = loss_vec.iter().fold(f64::NAN, |max, &val| val.max(max));
+        let max_loss2 = valid_loss_vec
+            .iter()
+            .fold(f64::NAN, |max, &val| val.max(max));
         let max_loss = max_loss1.max(max_loss2);
 
-        let min_loss1 = loss_vec.iter().fold(0f64, |min, &val| val.min(min));
-        let min_loss2 = valid_loss_vec.iter().fold(0f64, |min, &val| val.min(min));
+        let min_loss1 = loss_vec.iter().fold(f64::NAN, |min, &val| val.min(min));
+        let min_loss2 = valid_loss_vec
+            .iter()
+            .fold(f64::NAN, |min, &val| val.min(min));
         let min_loss = if min_loss1.min(min_loss2) > 0.0 {
             0.0
         } else {
@@ -98,9 +102,7 @@ pub fn draw_histogram(
     path: String,
 ) -> Result<(), Box<dyn Error>> {
     let n = datas.len();
-    let max_y = datas
-        .iter()
-        .fold(0.0f64, |max, &val| if val > max { val } else { max });
+    let max_y = datas.iter().fold(f64::NAN, |max, &val| val.max(max));
     let mean = datas
         .iter()
         .fold(0.0f64, |mean, &val| mean + val / n as f64);

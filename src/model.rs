@@ -72,8 +72,9 @@ impl Layer {
             let mut sum: f64 = 0.0;
             // loop through input and add w*x + b to sum
             for i in 0..inputs.len() {
-                sum += (self.w[j][i] * inputs[i]) + self.b[j]
+                sum += self.w[j][i] * inputs[i];
             }
+            sum += self.b[j];
             self.outputs[j] = sum;
             result.push((self.act.func)(sum));
         }
@@ -85,8 +86,8 @@ impl Layer {
         for j in 0..self.w.len() {
             self.b[j] -= momentum * self.prev_local_grads[j] + lr * self.local_grads[j]; // update each neuron bias
             for i in 0..self.w[j].len() {
-                self.w[j][i] -= momentum * self.prev_grads[j][i] + lr * self.grads[j][i];
                 // update each weights
+                self.w[j][i] -= momentum * self.prev_grads[j][i] + lr * self.grads[j][i];
             }
         }
     }
@@ -215,8 +216,8 @@ mod tests {
             }
         }
 
-        assert_eq!(linear.forward(&vec![1.0, 1.0])[0], 0.982013790037908442);
-        assert_eq!(linear.outputs[0], 4.0);
+        assert_eq!(linear.forward(&vec![1.0, 1.0])[0], 0.9525741268224334);
+        assert_eq!(linear.outputs[0], 3.0);
     }
 
     #[test]
@@ -229,9 +230,9 @@ mod tests {
             }
         }
         let result = linear.forward(&vec![0.0, 1.0]);
-        assert_eq!(result[0], 0.9525741268224334);
-        assert_eq!(result[1], 0.9820137900379084);
-        assert_eq!(linear.outputs[0], 3.0);
-        assert_eq!(linear.outputs[1], 4.0);
+        assert_eq!(linear.outputs[0], 2.0);
+        assert_eq!(linear.outputs[1], 3.0);
+        assert_eq!(result[0], 0.8807970779778823);
+        assert_eq!(result[1], 0.9525741268224334);
     }
 }
