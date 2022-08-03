@@ -47,6 +47,18 @@ pub fn cross_2_4_1(lr: f64, momentum: f64, folder: &str) -> Result<(), Box<dyn E
     Ok(())
 }
 
+pub fn cross_2_8_1(lr: f64, momentum: f64, folder: &str) -> Result<(), Box<dyn Error>> {
+    fn model() -> Net {
+        let mut layers: Vec<model::Layer> = vec![];
+        layers.push(Layer::new(2, 8, 1.0, activator::sigmoid()));
+        layers.push(Layer::new(8, 1, 1.0, activator::sigmoid()));
+        Net::from_layers(layers)
+    }
+
+    cross_fit(&model, lr, momentum, folder)?;
+    Ok(())
+}
+
 pub fn cross_fit(
     model: &dyn Fn() -> Net,
     lr: f64,
@@ -57,9 +69,10 @@ pub fn cross_fit(
 
     let dataset = data::cross_dataset()?;
     let mut loss = loss::Loss::mse();
-    let epochs = 3000;
+    let epochs = 5000;
 
-    let mut accuracy: Vec<f64> = vec![];
+    let mut valid_acc: Vec<f64> = vec![];
+    let mut train_acc: Vec<f64> = vec![];
     let mut loss_g = graph::LossGraph::new();
     let mut matrix_vec: Vec<[[i32; 2]; 2]> = vec![];
 
@@ -90,19 +103,27 @@ pub fn cross_fit(
             loss_vec.push(running_loss);
 
             let mut valid_loss: f64 = 0.0;
-            let mut matrix = [[0, 0], [0, 0]];
             for data in validation_set.get_datas() {
                 let result = net.forward(&data.inputs);
-
-                confusion_count(&mut matrix, &result, &data.labels);
-
                 valid_loss += loss.criterion(&result, &data.labels);
             }
             valid_loss /= validation_set.get_datas().len() as f64;
             valid_loss_vec.push(valid_loss);
 
             if i == epochs - 1 {
-                accuracy.push((matrix[0][0] + matrix[1][1]) as f64 / validation_set.len() as f64);
+                let mut matrix = [[0, 0], [0, 0]];
+                for data in validation_set.get_datas() {
+                    let result = net.forward(&data.inputs);
+                    confusion_count(&mut matrix, &result, &data.labels);       
+                }
+                
+                let mut matrix2 = [[0, 0], [0, 0]];
+                for data in training_set.get_datas() {
+                    let result = net.forward(&data.inputs);
+                    confusion_count(&mut matrix2, &result, &data.labels);       
+                }
+                valid_acc.push((matrix[0][0] + matrix[1][1]) as f64 / validation_set.len() as f64);
+                train_acc.push((matrix2[0][0] + matrix2[1][1]) as f64 / training_set.len() as f64);
                 matrix_vec.push(matrix);
             }
 
@@ -118,14 +139,20 @@ pub fn cross_fit(
     let duration: Duration = start.elapsed();
 
     let mut file = fs::File::create(format!("{}/result.txt", models))?;
-    file.write_all(format!("cv_score: {:?}\n\ntime used: {:?}", accuracy, duration).as_bytes())?;
+    file.write_all(format!("cv_score: {:?}\n\ntime used: {:?}", valid_acc, duration).as_bytes())?;
 
     loss_g.draw(format!("img/{}/loss.png", folder))?;
     graph::draw_histogram(
-        accuracy.clone(),
-        "Accuracy",
+        train_acc,
+        "Training Accuracy",
         ("Iterations", "Accuracy"),
-        format!("{}/accuracy.png", img),
+        format!("{}/train_acc.png", img),
+    )?;
+    graph::draw_histogram(
+        valid_acc,
+        "Validation Accuracy",
+        ("Iterations", "Accuracy"),
+        format!("{}/valid_acc.png", img),
     )?;
     graph::draw_confustion(matrix_vec, format!("{}/confusion_matrix.png", img))?;
 

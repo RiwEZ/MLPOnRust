@@ -49,7 +49,9 @@ pub fn flood_fit(
     let mut loss = loss::Loss::mse();
     let epochs = 1000;
 
-    let mut cv_score: Vec<f64> = vec![];
+    let mut cv_valid_loss: Vec<f64> = vec![];
+    let mut cv_train_loss: Vec<f64> = vec![];
+
     let mut r2_score: Vec<f64> = vec![];
     let mut loss_g = graph::LossGraph::new();
     let start = Instant::now();
@@ -60,6 +62,8 @@ pub fn flood_fit(
         // get training set and validation set
         let training_set = data::standardization(&dt.0, dt.0.mean(), dt.0.std());
         let validation_set = data::standardization(&dt.1, dt.0.mean(), dt.0.std());
+        //let training_set = data::minmax_norm(&dt.0, dt.0.min(), dt.0.max());
+        //let validation_set = data::minmax_norm(&dt.1, dt.1.min(), dt.1.max());
 
         // training
         let mut loss_vec: Vec<f64> = vec![];
@@ -102,7 +106,8 @@ pub fn flood_fit(
                 }
 
                 r2_score.push(1.0 - (sum_sqr / total_sum_sqr));
-                cv_score.push(valid_loss);
+                cv_valid_loss.push(valid_loss);
+                cv_train_loss.push(running_loss);
             }
 
             println!(
@@ -120,17 +125,23 @@ pub fn flood_fit(
     file.write_all(
         format!(
             "cv_score: {:?}\n\nr2_score: {:?}\n\ntime used: {:?}",
-            cv_score, r2_score, duration
+            cv_valid_loss, r2_score, duration
         )
         .as_bytes(),
     )?;
 
     loss_g.draw(format!("img/{}/loss.png", folder))?;
     graph::draw_histogram(
-        cv_score,
-        "Cross Validation Loss",
-        ("Iterations", "Validation Loss"),
-        format!("{}/cv_score.png", img),
+        cv_valid_loss,
+        "Validation MSE",
+        ("Iterations", "Validation MSE"),
+        format!("{}/cv_validl.png", img),
+    )?;
+    graph::draw_histogram(
+        cv_train_loss,
+        "Training MSE",
+        ("Iterations", "Training MSE"),
+        format!("{}/cv_trainl.png", img),
     )?;
     graph::draw_histogram(
         r2_score,
