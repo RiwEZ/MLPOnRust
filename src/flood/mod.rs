@@ -131,18 +131,14 @@ pub fn flood_fit(
     )?;
 
     loss_g.draw(format!("img/{}/loss.png", folder))?;
-    graph::draw_histogram(
-        cv_valid_loss,
-        "Validation MSE",
-        ("Iterations", "Validation MSE"),
-        format!("{}/cv_validl.png", img),
+
+    graph::draw_2hist(
+        [cv_valid_loss, cv_train_loss],
+        "Validation/Training MSE",
+        ("Iterations", "Validataion/Training MSE"),
+        format!("{}/cv_l.png", img),
     )?;
-    graph::draw_histogram(
-        cv_train_loss,
-        "Training MSE",
-        ("Iterations", "Training MSE"),
-        format!("{}/cv_trainl.png", img),
-    )?;
+    
     graph::draw_histogram(
         r2_score,
         "Cross Validation R2 Scores",

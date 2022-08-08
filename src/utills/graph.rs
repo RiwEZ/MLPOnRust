@@ -152,6 +152,86 @@ pub fn draw_histogram(
     Ok(())
 }
 
+pub fn draw_2hist(
+    datas: [Vec<f64>; 2],
+    title: &str,
+    axes_desc: (&str, &str),
+    path: String,
+) -> Result<(), Box<dyn Error>> {
+    let n = datas.iter().fold(0f64, |max, l| max.max(l.len() as f64));
+    let max_y = datas.iter().fold(0f64, |max, l| {
+        max.max(l.iter().fold(f64::NAN, |v_max, &v| v.max(v_max)))
+    });
+    let mean: Vec<f64> = datas.iter().map(|l| {
+        l.iter().fold(0f64, |mean, &val| mean + val/l.len() as f64)
+    }).collect();
+    
+
+    let root = BitMapBackend::new(&path, (1024, 768)).into_drawing_area();
+    root.fill(&WHITE)?;
+
+    let mut chart = ChartBuilder::on(&root)
+        .caption(title, ("Hack", 44, FontStyle::Bold).into_font())
+        .margin(20)
+        .x_label_area_size(50)
+        .y_label_area_size(60)
+        .build_cartesian_2d((1..n as u32).into_segmented(), 0.0..max_y)?
+        .set_secondary_coord(0.0..n, 0.0..max_y);
+
+    chart
+        .configure_mesh()
+        .disable_x_mesh()
+        .y_desc(axes_desc.1)
+        .x_desc(axes_desc.0)
+        .axis_desc_style(("Hack", 20))
+        .draw()?;
+
+    let a = datas[0].iter().zip(0..).map(|(y, x)| {
+        Rectangle::new(
+            [(x as f64 + 0.1, *y), (x as f64 + 0.5, 0f64)],
+            Into::<ShapeStyle>::into(&RED.mix(0.5)).filled(),
+        )
+    });
+
+    let b = datas[1].iter().zip(0..).map(|(y, x)| {
+        Rectangle::new(
+            [(x as f64 + 0.5, *y), (x as f64 + 0.9, 0f64)],
+            Into::<ShapeStyle>::into(&BLUE.mix(0.5)).filled(),
+        )
+    });
+
+    chart.draw_secondary_series(a)?;
+    chart.draw_secondary_series(b)?;
+
+    let v: Vec<usize> = (0..(n + 1.0) as usize).collect();
+    chart
+        .draw_secondary_series(LineSeries::new(
+            v.iter().map(|i| (*i as f64, mean[0])),
+            RED.filled().stroke_width(2),
+        ))?
+        .label(format!("mean: {:.5}", mean[0]))
+        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
+
+    chart
+        .draw_secondary_series(LineSeries::new(
+            v.iter().map(|i| (*i as f64, mean[1])),
+            BLUE.filled().stroke_width(2),
+        ))?
+        .label(format!("mean: {:.5}", mean[1]))
+        .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
+
+    chart
+        .configure_series_labels()
+        .position(SeriesLabelPosition::UpperRight)
+        .label_font(("Hack", 14).into_font())
+        .background_style(&WHITE)
+        .border_style(&BLACK)
+        .draw()?;
+
+    root.present()?;
+    Ok(())
+}
+
 /// Draw confusion matrix
 pub fn draw_confustion(matrix_vec: Vec<[[i32; 2]; 2]>, path: String) -> Result<(), Box<dyn Error>> {
     let root = BitMapBackend::new(&path, (2000, 1000)).into_drawing_area();

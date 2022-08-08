@@ -60,15 +60,13 @@ impl DataSet {
     }
 
     pub fn max(&self) -> f64 {
-        self
-            .data_points()
+        self.data_points()
             .iter()
             .fold(f64::NAN, |max, &v| v.max(max))
     }
 
     pub fn min(&self) -> f64 {
-        self
-            .data_points()
+        self.data_points()
             .iter()
             .fold(f64::NAN, |min, &v| v.min(min))
     }

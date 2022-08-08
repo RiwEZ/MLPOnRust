@@ -114,13 +114,13 @@ pub fn cross_fit(
                 let mut matrix = [[0, 0], [0, 0]];
                 for data in validation_set.get_datas() {
                     let result = net.forward(&data.inputs);
-                    confusion_count(&mut matrix, &result, &data.labels);       
+                    confusion_count(&mut matrix, &result, &data.labels);
                 }
-                
+
                 let mut matrix2 = [[0, 0], [0, 0]];
                 for data in training_set.get_datas() {
                     let result = net.forward(&data.inputs);
-                    confusion_count(&mut matrix2, &result, &data.labels);       
+                    confusion_count(&mut matrix2, &result, &data.labels);
                 }
                 valid_acc.push((matrix[0][0] + matrix[1][1]) as f64 / validation_set.len() as f64);
                 train_acc.push((matrix2[0][0] + matrix2[1][1]) as f64 / training_set.len() as f64);
@@ -142,18 +142,14 @@ pub fn cross_fit(
     file.write_all(format!("cv_score: {:?}\n\ntime used: {:?}", valid_acc, duration).as_bytes())?;
 
     loss_g.draw(format!("img/{}/loss.png", folder))?;
-    graph::draw_histogram(
-        train_acc,
-        "Training Accuracy",
-        ("Iterations", "Accuracy"),
-        format!("{}/train_acc.png", img),
+    
+    graph::draw_2hist(
+        [valid_acc, train_acc],
+        "Validation/Training Accuracy",
+        ("Iterations", "Validataion/Training Accuracy"),
+        format!("{}/acc.png", img),
     )?;
-    graph::draw_histogram(
-        valid_acc,
-        "Validation Accuracy",
-        ("Iterations", "Accuracy"),
-        format!("{}/valid_acc.png", img),
-    )?;
+
     graph::draw_confustion(matrix_vec, format!("{}/confusion_matrix.png", img))?;
 
     Ok(())
