@@ -141,7 +141,7 @@ pub fn cross_fit(
     let mut file = fs::File::create(format!("{}/result.txt", models))?;
     file.write_all(format!("cv_score: {:?}\n\ntime used: {:?}", valid_acc, duration).as_bytes())?;
 
-    loss_g.draw(format!("img/{}/loss.png", folder))?;
+    loss_g.draw(format!("{}/loss.png", img))?;
     
     graph::draw_2hist(
         [valid_acc, train_acc],

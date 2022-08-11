@@ -130,7 +130,7 @@ pub fn flood_fit(
         .as_bytes(),
     )?;
 
-    loss_g.draw(format!("img/{}/loss.png", folder))?;
+    loss_g.draw(format!("{}/loss.png", img))?;
 
     graph::draw_2hist(
         [cv_valid_loss, cv_train_loss],

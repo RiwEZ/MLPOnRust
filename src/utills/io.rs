@@ -91,24 +91,9 @@ pub fn check_dir(folder: &str) -> Result<(String, String), Box<dyn Error>> {
     if !Path::new(&models_path).exists() {
         create_dir(&models_path)?;
     }
-    let img_path = format!("img/{}", folder);
+    let img_path = format!("report/images/{}", folder);
     if !Path::new(&img_path).exists() {
         create_dir(&img_path)?;
     }
     Ok((models_path, img_path))
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn temp_test() -> Result<(), Box<dyn Error>> {
-        /*
-        let net = model::Net::new(vec![2, 2, 2]);
-        save(& net.layers, "models/xor.json".to_string())?;
-        */
-        load("models/xor.json")?;
-        Ok(())
-    }
 }

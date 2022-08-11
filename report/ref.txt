@@ -1,0 +1,3 @@
+Data Leakage: https://machinelearningmastery.com/data-leakage-machine-learning/
+Cross Validation: https://machinelearningmastery.com/k-fold-cross-validation/#:~:text=Cross%2Dvalidation%20is%20a%20resampling,k%2Dfold%20cross%2Dvalidation.
+Feature Scaling on Cross validation: https://www.mo4tech.com/feature-scaling-and-cross-validation.html

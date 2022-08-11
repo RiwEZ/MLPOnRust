@@ -89,7 +89,6 @@ impl LossGraph {
                 self.draw_loss(idx, drawing_area, loss_vec, valid_loss_vec)?;
             }
         }
-
         Ok(())
     }
 }
