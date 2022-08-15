@@ -32,7 +32,8 @@ If you are interested to know how I implement the multi-layers perceptron and tr
 , you can see the source code for all models that have been shown in this report on my 
 \href{https://github.com/RiwEZ/MLPOnRust}{Github repository}.
 
-\section{Flood Dataset}
+\section*{Flood Dataset}
+\label{section:1}
 \subsection*{Problem}
 We want to predict water level at 7 hours ahead given station 1 and station 2 
 data at present, 1 hour before, 2 hours before, and 3 hours before. 
@@ -60,15 +61,15 @@ training with SGD (Stochastic Gradient Descent) algorithm.
 Then, we train each cross-validation set for $1000$ epochs.
 
 We will create one base model that should perform good enough 
-and create a variations base on that model, that is train with no 
-\emph{momentum}, train with smaller \emph{learning rate}, and add more 
-layers or hidden nodes to see that if we introduce those variations, 
+and create a variations base on that model. For this problem we will introduce these variations
+i.e. train with no \emph{momentum}, train with smaller \emph{learning rate}, train with no data preprocessing 
+and add more layers or hidden nodes to see that if we introduce those variations, 
 will the model perform better, converge faster, or have no improvement at all?
 
 \subsection*{Training Result}
 \subsubsection*{Flood-8-4-1}
 Our base model that contains only 8 input nodes, 1 hidden layer with 4 nodes, and 1 output node train with $lr = 0.01$ and $momentum = 0.01$.
-The training process take about $60$ seconds. Below is the graphs we get from training this model. 
+The training process takes about $60$ seconds. Below are the graphs we get from training this model. 
 \begin{figure}[ht]
 	\begin{subfigure}{\textwidth}
 		\centering
@@ -89,8 +90,8 @@ The training process take about $60$ seconds. Below is the graphs we get from tr
 \newpage
 \subsubsection*{Flood-8-4-1 with no momentum}
 Same base model but train with $lr = 0.01$ and $momentum = 0$.
-The training process take about $60$ seconds.
-Below is the graphs we get from training this model. 
+The training process takes about $60$ seconds.
+Below are the graphs we get from training this model. 
 \begin{figure}[ht]
 	\begin{subfigure}{\textwidth}
 		\centering
@@ -111,8 +112,8 @@ Below is the graphs we get from training this model.
 \newpage
 \subsubsection*{Flood-8-4-1 with small learning rate}
 Same base model but train with $lr = 0.0001$ and $momentum = 0.01$.
-The training process take about $59$ seconds.
-Below is the graphs we get from training this model. 
+The training process takes about $59$ seconds.
+Below are the graphs we get from training this model. 
 \begin{figure}[ht]
 	\begin{subfigure}{\textwidth}
 		\centering
@@ -131,64 +132,97 @@ Below is the graphs we get from training this model.
 \FloatBarrier
 
 \newpage
-\subsubsection*{Flood-8-8-1}
-Bigger model that contains 8 input nodes, 1 hidden layer with 8 nodes, and 1 output node train with $lr = 0.01$ and $momentum = 0.01$.
-The training process take about $105$ seconds.
-Below is the graphs we get from training this model. 
+\subsection*{Flood-8-4-1 with no data preprocessing}
+Same base model train with $lr = 0.01$ and $momentum = 0.01$ but 
+it is the only model with no data preprocessing. The training process takes about $57$ seconds.
+Below are the graphs we get from training this model. 
 \begin{figure}[ht]
 	\begin{subfigure}{\textwidth}
 		\centering
-		\includegraphics[scale=0.3]{flood-8-8-1/cv_l}
+		\includegraphics[scale=0.3]{flood-8-4-1_4/cv_l}
 		\caption{Each iteration training (blue) and validation (red) MSE at last epoch}
 		\label{fig:5a}
 	\end{subfigure}
 	\begin{subfigure}{\textwidth}
-		\includegraphics[width=\textwidth]{flood-8-8-1/loss}
+		\includegraphics[width=\textwidth]{flood-8-4-1_4/loss}
 		\caption{Each iteration training MSE (blue) and validation MSE (red) at each epoch.}
 		\label{fig:5b}
 	\end{subfigure}
-	\caption{Training result of Flood-8-8-1.}
+	\caption{Training result of Flood-8-4-1 with no data preprocessing.}
 	\label{fig:5}
 \end{figure}
 \FloatBarrier
 
 \newpage
+\subsubsection*{Flood-8-8-1}
+Bigger model that contains 8 input nodes, 1 hidden layer with 8 nodes, and 1 output node train with $lr = 0.01$ and $momentum = 0.01$.
+The training process takes about $105$ seconds.
+Below are the graphs we get from training this model. 
+\begin{figure}[ht]
+	\begin{subfigure}{\textwidth}
+		\centering
+		\includegraphics[scale=0.3]{flood-8-8-1/cv_l}
+		\caption{Each iteration training (blue) and validation (red) MSE at last epoch}
+		\label{fig:6a}
+	\end{subfigure}
+	\begin{subfigure}{\textwidth}
+		\includegraphics[width=\textwidth]{flood-8-8-1/loss}
+		\caption{Each iteration training MSE (blue) and validation MSE (red) at each epoch.}
+		\label{fig:6b}
+	\end{subfigure}
+	\caption{Training result of Flood-8-8-1.}
+	\label{fig:6}
+\end{figure}
+\FloatBarrier
+
+
+\newpage
 \subsection*{Analysis}
-From \cref*{table:1}, we can see that model with the same size will use around 
+From \cref*{table:1}, we can see that models with the same size will use around 
 the same amount of training time, but with the bigger model, the training time 
 gets longer. We can also see that Flood-8-4-1 with small learning rate 
 is the worst in terms of validation set mean MSE compare 
-with other models, the model seems to be stuck at a certain gradient level 
+with other models that do data preprocessing, the model seems to be stuck at a certain gradient level 
 (see \cref{fig:4b} the model is slowly converging but too slow). 
 Lastly, we can also see that the best performing model in terms of validation set mean
-MSE is Flood-8-8-1 at $3.86 \times 10^{-3}$.
+MSE is Flood-8-8-1 at $3.86 \times 10^{-3}$ which probably is because of 4 more hidden nodes that
+we have added. 
 
 \begin{table}[htp]
 	\centering
-	\begin{tabular}{l S[table-format=3] S[table-format=2.2]}
+	\begin{tabular}{l S[table-format=3] S[table-format=7.2]}
 		\toprule
         \multicolumn{1}{c}{Model} & {Training Time (seconds)} & {Validation Set Mean MSE ($10^{-3}$)} \\
         \midrule
         Flood-8-4-1 & 60 & 4.03 \\
         Flood-8-4-1 with no momentum & 60 & 4.20 \\
         Flood-8-4-1 with small learniing rate & 59 & 19.83 \\
+		Flood-8-4-1 with no data preprocessing & 57 & 5006215.00 \\
         Flood-8-8-1 & 105 & 3.86 \\
         \bottomrule
     \end{tabular} 
     \caption{Training time and validation set mean MSE 
-		(red line on \cref{fig:2a}, \cref{fig:3a}, \cref{fig:4a}, and \cref{fig:5a} ) of each Flood model.}
+		(red line on \cref{fig:2a}, \cref{fig:3a}, \cref{fig:4a},
+		\cref{fig:5a}, and \cref{fig:6a} ) of each Flood model.}
 	\label{table:1}
 \end{table}
 \FloatBarrier
 
 We can also see a similar pattern on all of our Flood models in \cref{fig:2b}, \cref{fig:3b}
-\cref{fig:4b}, and \cref{fig:5b} the MSE is decreasing very fast 
+\cref{fig:4b}, and \cref{fig:6b} the MSE is decreasing very fast 
 at the first 100 epochs and seems to be stuck at a certain level of MSE or 
-very slow in reduce the MSE.
-
+very slow in MSE reduction. But, there is one model that does not follow this
+pattern that is Flood-8-4-1 with no data preprocessing 
+as we can see in \cref{fig:5b}, the training MSE seems to be flickering a lot
+and there is no sign of the training MSE converging which results in the poor performance
+of the model that can not be compared with model train with data preprocessing even when
+we unstandardized the MSE of the model with data preprocessing e.g. we unstandardized
+Flood-8-4-1 with small learning rate using this equation $x = x' \times std + mean$ where
+$mean \approx 340$ and $std \approx 120$ come from whole dataset and $x' = 19.83 \times 10^{-3}$
+, we get $x = 342.3796$ which is much smaller than $5006.215$.
 
 \newpage
-\section{CrossPat Dataset}
+\section*{CrossPat Dataset}
 \subsection*{Problem}
 We want to predict the class (1 of possible 2 classes) that belongs
 to our inputs (or features).
@@ -360,5 +394,12 @@ show that the error is not biased to one specific class indicating that the mode
 about the 2 classes equally. On the other hand, the confusion matrix of all Cross-2-4-1 models
 specifically in \cref{fig:8c} and \cref{fig:9c} we can see that there're a big number
 of FP and FN and in some iteration the error is biased to one of FP or FN.
+
+\section*{Summary}
+From both problems, we have learned that an MLP model can solve these problems 
+and the performance of the model is dependent on parameters that we can set 
+for the model such as learning rate, momentum, and size of the model as we can see
+in the above experimenting result. And, in some datasets, there is a need for data 
+preprocessing so that the model can fit to that dataset as we can see in \nameref{section:1}.  
 
 \end{document}
