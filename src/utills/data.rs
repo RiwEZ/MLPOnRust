@@ -1,5 +1,4 @@
 use super::io::read_lines;
-use plotters::data;
 use rand::prelude::SliceRandom;
 use serde::Deserialize;
 use std::error::Error;
@@ -9,6 +8,7 @@ pub struct Data {
     pub inputs: Vec<f64>,
     pub labels: Vec<f64>,
 }
+#[derive(Clone)]
 pub struct DataSet {
     datas: Vec<Data>,
 }

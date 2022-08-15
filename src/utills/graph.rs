@@ -161,10 +161,13 @@ pub fn draw_2hist(
     let max_y = datas.iter().fold(0f64, |max, l| {
         max.max(l.iter().fold(f64::NAN, |v_max, &v| v.max(v_max)))
     });
-    let mean: Vec<f64> = datas.iter().map(|l| {
-        l.iter().fold(0f64, |mean, &val| mean + val/l.len() as f64)
-    }).collect();
-    
+    let mean: Vec<f64> = datas
+        .iter()
+        .map(|l| {
+            l.iter()
+                .fold(0f64, |mean, &val| mean + val / l.len() as f64)
+        })
+        .collect();
 
     let root = BitMapBackend::new(&path, (1024, 768)).into_drawing_area();
     root.fill(&WHITE)?;

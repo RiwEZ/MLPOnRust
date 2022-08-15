@@ -13,7 +13,12 @@ use utills::data;
 use utills::graph;
 use utills::io;
 
-pub fn flood_8_4_1(lr: f64, momentum: f64, folder: &str) -> Result<(), Box<dyn Error>> {
+pub fn flood_8_4_1(
+    lr: f64,
+    momentum: f64,
+    folder: &str,
+    standardize: bool,
+) -> Result<(), Box<dyn Error>> {
     fn model() -> Net {
         let mut layers: Vec<model::Layer> = vec![];
         layers.push(Layer::new(8, 4, 1.0, activator::sigmoid()));
@@ -21,7 +26,7 @@ pub fn flood_8_4_1(lr: f64, momentum: f64, folder: &str) -> Result<(), Box<dyn E
         Net::from_layers(layers)
     }
 
-    flood_fit(&model, lr, momentum, folder)?;
+    flood_fit(&model, lr, momentum, folder, standardize)?;
     Ok(())
 }
 
@@ -33,7 +38,7 @@ pub fn flood_8_8_1(lr: f64, momentum: f64, folder: &str) -> Result<(), Box<dyn E
         Net::from_layers(layers)
     }
 
-    flood_fit(&model, lr, momentum, folder)?;
+    flood_fit(&model, lr, momentum, folder, true)?;
     Ok(())
 }
 
@@ -42,6 +47,7 @@ pub fn flood_fit(
     lr: f64,
     momentum: f64,
     folder: &str,
+    standardize: bool,
 ) -> Result<(), Box<dyn Error>> {
     let (models, img) = utills::io::check_dir(folder)?;
 
@@ -60,8 +66,17 @@ pub fn flood_fit(
         let mut net = model();
 
         // get training set and validation set
-        let training_set = data::standardization(&dt.0, dt.0.mean(), dt.0.std());
-        let validation_set = data::standardization(&dt.1, dt.0.mean(), dt.0.std());
+        let training_set = if standardize {
+            data::standardization(&dt.0, dt.0.mean(), dt.0.std())
+        } else {
+            dt.0.clone()
+        };
+
+        let validation_set = if standardize {
+            data::standardization(&dt.1, dt.0.mean(), dt.0.std())
+        } else {
+            dt.1.clone()
+        };
         //let training_set = data::minmax_norm(&dt.0, dt.0.min(), dt.0.max());
         //let validation_set = data::minmax_norm(&dt.1, dt.1.min(), dt.1.max());
 
@@ -138,7 +153,7 @@ pub fn flood_fit(
         ("Iterations", "Validataion/Training MSE"),
         format!("{}/cv_l.png", img),
     )?;
-    
+
     graph::draw_histogram(
         r2_score,
         "Cross Validation R2 Scores",

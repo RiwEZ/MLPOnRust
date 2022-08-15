@@ -142,7 +142,7 @@ pub fn cross_fit(
     file.write_all(format!("cv_score: {:?}\n\ntime used: {:?}", valid_acc, duration).as_bytes())?;
 
     loss_g.draw(format!("{}/loss.png", img))?;
-    
+
     graph::draw_2hist(
         [valid_acc, train_acc],
         "Validation/Training Accuracy",

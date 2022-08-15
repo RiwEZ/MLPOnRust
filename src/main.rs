@@ -11,21 +11,23 @@ use utills::data::un_standardization;
 fn main() -> Result<(), Box<dyn Error>> {
     // training code
 
-    //flood::flood_8_4_1(0.01, 0.01, "flood-8-4-1")?; // 1
-    //flood::flood_8_4_1(0.01, 0.0, "flood-8-4-1_2")?; // 2
-    //flood::flood_8_4_1(0.0001, 0.0, "flood-8-4-1_3")?; // 2
+    //flood::flood_8_4_1(0.01, 0.01, "flood-8-4-1", true)?; // 1
+    //flood::flood_8_4_1(0.01, 0.0, "flood-8-4-1_2", true)?; // 2
+    //flood::flood_8_4_1(0.0001, 0.0, "flood-8-4-1_3", true)?; // 3
+    //flood::flood_8_4_1(0.01, 0.01, "flood-8-4-1_4", false)?; // 4
     //flood::flood_8_8_1(0.01, 0.01, "flood-8-8-1")?;
-    cross::cross_2_4_1(0.01, 0.01, "cross-2-4-1")?;
-    cross::cross_2_4_1(0.01, 0.0, "cross-2-4-1_2")?;
-    cross::cross_2_4_1(0.0001, 0.01, "cross-2-4-1_3")?;
-    cross::cross_2_8_1(0.01, 0.01, "cross-2-8-1")?;
+    //cross::cross_2_4_1(0.01, 0.01, "cross-2-4-1")?;
+    //cross::cross_2_4_1(0.01, 0.0, "cross-2-4-1_2")?;
+    //cross::cross_2_4_1(0.0001, 0.01, "cross-2-4-1_3")?;
+    //cross::cross_2_8_1(0.01, 0.01, "cross-2-8-1")?;
 
-    /*
     let dataset = utills::data::flood_dataset()?;
-    let mut net = utills::io::load("models/flood-8-4-1_2/3.json")?;
+    //let mut net = utills::io::load("models/flood-8-4-1_2/3.json")?;
 
     let mean = dataset.mean();
     let std = dataset.std();
+    println!("{}, {}", mean, std);
+    /*
     let st_dt = utills::data::standardization(&dataset, mean, std);
 
     let mut loss_mean = 0.0;
