@@ -253,9 +253,11 @@ and add more layers or hidden nodes to see that if we introduce
 those variations, will the model perform better, converge faster, or have no improvement?
 
 \subsection*{Training Result}
-Accuracy is calculate using this equation $\frac{TP+TN}{TP+TN+FN+FP}$ where $TP, TN, FN, FP$ comes from confustion matrix.
+We use only 1 output node in all models because this is a binary classification task so we can just map a pair $(1, 0) \rightarrow 1$ and $(0, 1) \rightarrow 0$.
+We then have a threshold at $0.5$ if output is more than $0.5$ then it is $1$ else it is $0$.
+Accuracy is then calculated by using this equation $\frac{TP+TN}{TP+TN+FN+FP}$ where $TP, TN, FN, FP$ come from confusion matrix.
 \subsubsection*{Cross-2-4-1}
-Our base model with 2 input nodes, 1 hidden layer with 4 nodes, and 1 output node train with $lr = 0.01$ and $momentum = 0.01$. We use only 1 output node because this is a binary classification task so we can just map a pair $(1, 0) \rightarrow 1$ and $(0, 1) \rightarrow 0$.
+Our base model with 2 input nodes, 1 hidden layer with 4 nodes, and 1 output node train with $lr = 0.01$ and $momentum = 0.01$. 
 The training process takes about 122 seconds..
 \subsubsection*{Cross-2-4-1 with no momentum}
 Same base model train with $lr = 0.01$ and $momentum = 0.0$.
