@@ -69,12 +69,12 @@ will the model perform better, converge faster, or have no improvement at all?
 \subsection*{Training Result}
 \subsubsection*{Flood-8-4-1}
 Our base model that contains only 8 input nodes, 1 hidden layer with 4 nodes, and 1 output node train with $lr = 0.01$ and $momentum = 0.01$.
-The training process takes about $60$ seconds. Below are the graphs we get from training this model. 
+The training process takes about $56$ seconds. Below are the graphs we get from training this model. 
 \begin{figure}[ht]
 	\begin{subfigure}{\textwidth}
 		\centering
 		\includegraphics[scale=0.3]{flood-8-4-1/cv_l}
-		\caption{Each iteration training (blue) and validation (red) MSE at last epoch}
+		\caption{Each iteration training (blue) and validation (red) RMSE at last epoch}
 		\label{fig:2a}
 	\end{subfigure}
 	\begin{subfigure}{\textwidth}
@@ -90,13 +90,13 @@ The training process takes about $60$ seconds. Below are the graphs we get from 
 \newpage
 \subsubsection*{Flood-8-4-1 with no momentum}
 Same base model but train with $lr = 0.01$ and $momentum = 0$.
-The training process takes about $60$ seconds.
+The training process takes about $56$ seconds.
 Below are the graphs we get from training this model. 
 \begin{figure}[ht]
 	\begin{subfigure}{\textwidth}
 		\centering
 		\includegraphics[scale=0.3]{flood-8-4-1_2/cv_l}
-		\caption{Each iteration training (blue) and validation (red) MSE at last epoch}
+		\caption{Each iteration training (blue) and validation (red) RMSE at last epoch}
 		\label{fig:3a}
 	\end{subfigure}
 	\begin{subfigure}{\textwidth}
@@ -112,13 +112,13 @@ Below are the graphs we get from training this model.
 \newpage
 \subsubsection*{Flood-8-4-1 with small learning rate}
 Same base model but train with $lr = 0.0001$ and $momentum = 0.01$.
-The training process takes about $59$ seconds.
+The training process takes about $56$ seconds.
 Below are the graphs we get from training this model. 
 \begin{figure}[ht]
 	\begin{subfigure}{\textwidth}
 		\centering
 		\includegraphics[scale=0.3]{flood-8-4-1_3/cv_l}
-		\caption{Each iteration training (blue) and validation (red) MSE at last epoch}
+		\caption{Each iteration training (blue) and validation (red) RMSE at last epoch}
 		\label{fig:4a}
 	\end{subfigure}
 	\begin{subfigure}{\textwidth}
@@ -140,7 +140,7 @@ Below are the graphs we get from training this model.
 	\begin{subfigure}{\textwidth}
 		\centering
 		\includegraphics[scale=0.3]{flood-8-4-1_4/cv_l}
-		\caption{Each iteration training (blue) and validation (red) MSE at last epoch}
+		\caption{Each iteration training (blue) and validation (red) RMSE at last epoch}
 		\label{fig:5a}
 	\end{subfigure}
 	\begin{subfigure}{\textwidth}
@@ -162,7 +162,7 @@ Below are the graphs we get from training this model.
 	\begin{subfigure}{\textwidth}
 		\centering
 		\includegraphics[scale=0.3]{flood-8-8-1/cv_l}
-		\caption{Each iteration training (blue) and validation (red) MSE at last epoch}
+		\caption{Each iteration training (blue) and validation (red) RMSE at last epoch}
 		\label{fig:6a}
 	\end{subfigure}
 	\begin{subfigure}{\textwidth}
@@ -181,27 +181,27 @@ Below are the graphs we get from training this model.
 From \cref*{table:1}, we can see that models with the same size will use around 
 the same amount of training time, but with the bigger model, the training time 
 gets longer. We can also see that Flood-8-4-1 with small learning rate 
-is the worst in terms of validation set mean MSE compare 
+is the worst in terms of validation set mean RMSE compare 
 with other models that do data preprocessing, the model seems to be stuck at a certain gradient level 
 (see \cref{fig:4b} the model is slowly converging but too slow). 
-Lastly, we can also see that the best performing model in terms of validation set mean
-MSE is Flood-8-8-1 at $3.86 \times 10^{-3}$ which probably is because of 4 more hidden nodes that
-we have added. 
+Surprisingly, the best performing model in terms of validation set mean
+RMSE is the base model Flood-8-4-1 that has mean RMSE at $6.023 \times 10^{-2}$ 
+not the bigger model Flood-8-8-1 that has more hidden nodes.
 
 \begin{table}[htp]
 	\centering
-	\begin{tabular}{l S[table-format=3] S[table-format=7.2]}
+	\begin{tabular}{l S[table-format=3] S[table-format=4.3]}
 		\toprule
-        \multicolumn{1}{c}{Model} & {Training Time (seconds)} & {Validation Set Mean MSE ($10^{-3}$)} \\
+        \multicolumn{1}{c}{Model} & {Training Time (seconds)} & {Validation Set Mean RMSE ($10^{-2}$)} \\
         \midrule
-        Flood-8-4-1 & 60 & 4.03 \\
-        Flood-8-4-1 with no momentum & 60 & 4.20 \\
-        Flood-8-4-1 with small learniing rate & 59 & 19.83 \\
-		Flood-8-4-1 with no data preprocessing & 57 & 5006215.00 \\
-        Flood-8-8-1 & 105 & 3.86 \\
+        Flood-8-4-1 & 56 & 6.023 \\
+        Flood-8-4-1 with no momentum & 56 & 6.383 \\
+        Flood-8-4-1 with small learniing rate & 56 & 14.400 \\
+		Flood-8-4-1 with no data preprocessing & 57 & 7378.489 \\
+        Flood-8-8-1 & 105 & 6.245 \\
         \bottomrule
     \end{tabular} 
-    \caption{Training time and validation set mean MSE 
+    \caption{Training time and validation set mean RMSE 
 		(red line on \cref{fig:2a}, \cref{fig:3a}, \cref{fig:4a},
 		\cref{fig:5a}, and \cref{fig:6a} ) of each Flood model.}
 	\label{table:1}
@@ -212,14 +212,18 @@ We can also see a similar pattern on all of our Flood models in \cref{fig:2b}, \
 \cref{fig:4b}, and \cref{fig:6b} the MSE is decreasing very fast 
 at the first 100 epochs and seems to be stuck at a certain level of MSE or 
 very slow in MSE reduction. But, there is one model that does not follow this
-pattern that is Flood-8-4-1 with no data preprocessing 
+pattern which is Flood-8-4-1 with no data preprocessing 
 as we can see in \cref{fig:5b}, the training MSE seems to be flickering a lot
-and there is no sign of the training MSE converging which results in the poor performance
-of the model that can not be compared with model train with data preprocessing even when
-we unstandardized the MSE of the model with data preprocessing e.g. we unstandardized
-Flood-8-4-1 with small learning rate using this equation $x = x' \times std + mean$ where
-$mean \approx 340$ and $std \approx 120$ come from whole dataset and $x' = 19.83 \times 10^{-3}$
-, we get $x = 342.3796$ which is much smaller than $5006.215$.
+and there is no sign of the training MSE converging indicating that 
+the model is struggling to learn with big error that comes 
+from not standardized data e.g. we are training a model with not standardized data; the result from 
+forward pass is $170$, the desired value is $150$, we'll get MSE $= (170 - 150)^{2} = 400$ 
+compared with standardized data; imagine the training set $mean = 340$, 
+$std = 120$ the desired value will be $\frac{(150 - mean)}{std} \approx -1.58$
+and suppose that the result from forward pass will be $\frac{(170 - mean)}{std} \approx -1.42$,
+we will get MSE $= (-1.42 -(-1.58))^{2} = 0.0256$ which is much smaller than not
+standardized data MSE (note that there is no need for the result from forward pass to be exactly like that,
+I use that conversion to only point out that in standardized data the MSE is much smaller).
 
 \newpage
 \section*{CrossPat Dataset}
@@ -402,6 +406,6 @@ From both problems, we have learned that an MLP model can solve these problems
 and the performance of the model is dependent on parameters that we can set 
 for the model such as learning rate, momentum, and size of the model as we can see
 in the above experimenting result. And, in some datasets, there is a need for data 
-preprocessing so that the model can fit to that dataset as we can see in \nameref{section:1}.  
+preprocessing so that the model does not struggle to learn with that dataset as we can see in \nameref{section:1}.  
 
 \end{document}

@@ -42,6 +42,10 @@ pub fn flood_8_8_1(lr: f64, momentum: f64, folder: &str) -> Result<(), Box<dyn E
     Ok(())
 }
 
+fn mse_to_rmse(mse: &Vec<f64>) -> Vec<f64> {
+    mse.iter().map(|v| {v.sqrt()}).collect()
+}
+
 pub fn flood_fit(
     model: &dyn Fn() -> Net,
     lr: f64,
@@ -148,9 +152,9 @@ pub fn flood_fit(
     loss_g.draw(format!("{}/loss.png", img))?;
 
     graph::draw_2hist(
-        [cv_valid_loss, cv_train_loss],
-        "Validation/Training MSE",
-        ("Iterations", "Validataion/Training MSE"),
+        [mse_to_rmse(&cv_valid_loss), mse_to_rmse(&cv_train_loss)],
+        "Validation/Training RMSE",
+        ("Iterations", "Validataion/Training RMSE"),
         format!("{}/cv_l.png", img),
     )?;
 
