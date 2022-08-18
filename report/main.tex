@@ -10,6 +10,10 @@
 \usepackage[utf8]{inputenc}
 \usepackage[utf8]{inputenc}
 \usepackage{geometry}
+\usepackage{minted}
+\usepackage{subfiles}
+
+\usemintedstyle{emacs}
 
 \geometry{
  a4paper,
@@ -30,7 +34,7 @@ This report is about the result from using my implementation of the multi-layers
 on Rust language to solve 2 problems given on 261456 - INTRO COMP INTEL FOR CPE class. 
 If you are interested to know how I implement the multi-layers perceptron and trained a model to solve these problems
 , you can see the source code for all models that have been shown in this report on my 
-\href{https://github.com/RiwEZ/MLPOnRust}{Github repository}.
+\href{https://github.com/RiwEZ/MLPOnRust}{Github repository} or in this document appendix on page 14.
 
 \section*{Flood Dataset}
 \label{section:1}
@@ -53,7 +57,7 @@ data at present, 1 hour before, 2 hours before, and 3 hours before.
 	\item Use MSE (Mean Squared Error) as a loss function.
 \end{itemize}
 
-\subsection*{Training}
+\subsection*{Training Method}
 Use 10\% cross-validation, and preprocess our data by using training set $mean$ 
 and $std$ to standardize (For each data point $x$ we calculate new 
 $x' = \frac{x - mean}{std}$) both training set and validation set before 
@@ -66,6 +70,7 @@ i.e. train with no \emph{momentum}, train with smaller \emph{learning rate}, tra
 and add more layers or hidden nodes to see that if we introduce those variations, 
 will the model perform better, converge faster, or have no improvement at all?
 
+\newpage
 \subsection*{Training Result}
 \subsubsection*{Flood-8-4-1}
 Our base model that contains only 8 input nodes, 1 hidden layer with 4 nodes, and 1 output node train with $lr = 0.01$ and $momentum = 0.01$.
@@ -112,7 +117,7 @@ Below are the graphs we get from training this model.
 \newpage
 \subsubsection*{Flood-8-4-1 with small learning rate}
 Same base model but train with $lr = 0.0001$ and $momentum = 0.01$.
-The training process takes about $56$ seconds.
+The training process takes about $59$ seconds.
 Below are the graphs we get from training this model. 
 \begin{figure}[ht]
 	\begin{subfigure}{\textwidth}
@@ -180,10 +185,7 @@ Below are the graphs we get from training this model.
 \subsection*{Analysis}
 From \cref*{table:1}, we can see that models with the same size will use around 
 the same amount of training time, but with the bigger model, the training time 
-gets longer. We can also see that Flood-8-4-1 with small learning rate 
-is the worst in terms of validation set mean RMSE compare 
-with other models that do data preprocessing, the model seems to be stuck at a certain gradient level 
-(see \cref{fig:4b} the model is slowly converging but too slow). 
+gets longer.
 Surprisingly, the best performing model in terms of validation set mean
 RMSE is the base model Flood-8-4-1 that has mean RMSE at $6.023 \times 10^{-2}$ 
 not the bigger model Flood-8-8-1 that has more hidden nodes.
@@ -196,7 +198,7 @@ not the bigger model Flood-8-8-1 that has more hidden nodes.
         \midrule
         Flood-8-4-1 & 56 & 6.023 \\
         Flood-8-4-1 with no momentum & 56 & 6.383 \\
-        Flood-8-4-1 with small learniing rate & 56 & 14.400 \\
+        Flood-8-4-1 with small learning rate & 59 & 6.230 \\
 		Flood-8-4-1 with no data preprocessing & 57 & 7378.489 \\
         Flood-8-8-1 & 105 & 6.245 \\
         \bottomrule
@@ -224,8 +226,8 @@ and suppose that the result from forward pass will be $\frac{(170 - mean)}{std} 
 we will get MSE $= (-1.42 -(-1.58))^{2} = 0.0256$ which is much smaller than not
 standardized data MSE (note that there is no need for the result from forward pass to be exactly like that,
 I use that conversion to only point out that in standardized data the MSE is much smaller).
-
 \newpage
+
 \section*{CrossPat Dataset}
 \subsection*{Problem}
 We want to predict the class (1 of possible 2 classes) that belongs
@@ -247,7 +249,7 @@ to our inputs (or features).
 	\item Use MSE (Mean Squared Error) as a loss function.
 \end{itemize}
 
-\subsection*{Training}
+\subsection*{Training Method}
 Use 10\% cross-validation with no data preprocessing, and train with SGD (Stochastic Gradient Descent) algorithm. Then, we train each cross-validation set for $5000$ epochs.
 
 We will create one base model that should perform good enough 
@@ -407,5 +409,8 @@ and the performance of the model is dependent on parameters that we can set
 for the model such as learning rate, momentum, and size of the model as we can see
 in the above experimenting result. And, in some datasets, there is a need for data 
 preprocessing so that the model does not struggle to learn with that dataset as we can see in \nameref{section:1}.  
+\newpage
+
+\subfile{appendix}
 
 \end{document}

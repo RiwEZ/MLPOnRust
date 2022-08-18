@@ -108,44 +108,6 @@ pub struct Net {
 }
 
 impl Net {
-    /// NeuralNetwork
-    /// # Examples
-    /// ```
-    /// fn main() -> Result<(), Box<dyn Error>> {
-    ///    let mut net = model::Net::new(vec![2, 2, 1]);
-    ///    let lr = 0.01;
-    ///
-    ///    let dataset = utills::xor_dataset();
-    ///
-    ///    let mut loss = loss::MSELoss::new();
-    ///    let mut loss_vec: Vec<f64> = vec![];
-    ///
-    ///    for _ in 0..5000 {
-    ///        let mut running_loss = 0.0;
-    ///
-    ///        for data in dataset.get_shuffled() {
-    ///            let result = net.forward(data.inputs.clone());
-    ///            loss.criterion(result, data.labels.clone());
-    ///            loss.backward(&mut net.layers);
-    ///            
-    ///            net.update(lr, 1.0);
-    ///
-    ///            running_loss += loss.item();
-    ///        }
-    ///        loss_vec.push(running_loss);
-    ///    }
-    ///    println!("epoch: {}, loss: {}", loss_vec.len(), loss_vec[loss_vec.len() - 1]);
-    ///    
-    ///    println!("\n{}", (net.forward(vec![0.0, 0.0])[0] > 0.5) );
-    ///    println!("\n{}", (net.forward(vec![1.0, 0.0])[0] > 0.5) );
-    ///    println!("\n{}", (net.forward(vec![0.0, 1.0])[0] > 0.5) );
-    ///    println!("\n{}", (net.forward(vec![1.0, 1.0])[0] > 0.5) );  
-    ///
-    ///    io::save(&net.layers, "models/xor.json".to_string())?;
-    ///    utills::draw_loss(loss_vec, "img/2.png".to_string())?;
-    ///    Ok(())
-    /// }
-    /// ```
     pub fn from_layers(layers: Vec<Layer>) -> Net {
         Net { layers }
     }
