@@ -74,7 +74,7 @@ will the model perform better, converge faster, or have no improvement at all?
 \subsection*{Training Result}
 \subsubsection*{Flood-8-4-1}
 Our base model that contains only 8 input nodes, 1 hidden layer with 4 nodes, and 1 output node train with $lr = 0.01$ and $momentum = 0.01$.
-The training process takes about $56$ seconds. Below are the graphs we get from training this model. 
+The training process takes about $54$ seconds. Below are the graphs we get from training this model. 
 \begin{figure}[ht]
 	\begin{subfigure}{\textwidth}
 		\centering
@@ -95,7 +95,7 @@ The training process takes about $56$ seconds. Below are the graphs we get from 
 \newpage
 \subsubsection*{Flood-8-4-1 with no momentum}
 Same base model but train with $lr = 0.01$ and $momentum = 0$.
-The training process takes about $56$ seconds.
+The training process takes about $54$ seconds.
 Below are the graphs we get from training this model. 
 \begin{figure}[ht]
 	\begin{subfigure}{\textwidth}
@@ -117,7 +117,7 @@ Below are the graphs we get from training this model.
 \newpage
 \subsubsection*{Flood-8-4-1 with small learning rate}
 Same base model but train with $lr = 0.0001$ and $momentum = 0.01$.
-The training process takes about $59$ seconds.
+The training process takes about $54$ seconds.
 Below are the graphs we get from training this model. 
 \begin{figure}[ht]
 	\begin{subfigure}{\textwidth}
@@ -137,7 +137,7 @@ Below are the graphs we get from training this model.
 \FloatBarrier
 
 \newpage
-\subsection*{Flood-8-4-1 with no data preprocessing}
+\subsubsection*{Flood-8-4-1 with no data preprocessing}
 Same base model train with $lr = 0.01$ and $momentum = 0.01$ but 
 it is the only model with no data preprocessing. The training process takes about $57$ seconds.
 Below are the graphs we get from training this model. 
@@ -157,11 +157,10 @@ Below are the graphs we get from training this model.
 	\label{fig:5}
 \end{figure}
 \FloatBarrier
-
 \newpage
 \subsubsection*{Flood-8-8-1}
 Bigger model that contains 8 input nodes, 1 hidden layer with 8 nodes, and 1 output node train with $lr = 0.01$ and $momentum = 0.01$.
-The training process takes about $105$ seconds.
+The training process takes about $104$ seconds.
 Below are the graphs we get from training this model. 
 \begin{figure}[ht]
 	\begin{subfigure}{\textwidth}
@@ -186,9 +185,9 @@ Below are the graphs we get from training this model.
 From \cref*{table:1}, we can see that models with the same size will use around 
 the same amount of training time, but with the bigger model, the training time 
 gets longer.
-Surprisingly, the best performing model in terms of validation set mean
-RMSE is the base model Flood-8-4-1 that has mean RMSE at $6.023 \times 10^{-2}$ 
-not the bigger model Flood-8-8-1 that has more hidden nodes.
+And, we can see that the best performing model in terms of validation set mean
+RMSE is Flood-8-8-1 which has mean RMSE at $6.003 \times 10^{-2}$ thus we anticipate that
+the more hidden nodes in the model may make the model better.
 
 \begin{table}[htp]
 	\centering
@@ -196,11 +195,11 @@ not the bigger model Flood-8-8-1 that has more hidden nodes.
 		\toprule
         \multicolumn{1}{c}{Model} & {Training Time (seconds)} & {Validation Set Mean RMSE ($10^{-2}$)} \\
         \midrule
-        Flood-8-4-1 & 56 & 6.023 \\
-        Flood-8-4-1 with no momentum & 56 & 6.383 \\
-        Flood-8-4-1 with small learning rate & 59 & 6.230 \\
-		Flood-8-4-1 with no data preprocessing & 57 & 7378.489 \\
-        Flood-8-8-1 & 105 & 6.245 \\
+        Flood-8-4-1 & 54 & 6.430 \\
+        Flood-8-4-1 with no momentum & 54 & 6.036 \\
+        Flood-8-4-1 with small learning rate & 54 & 14.707 \\
+		Flood-8-4-1 with no data preprocessing & 57 & 7122.431 \\
+        Flood-8-8-1 & 104 & 6.003 \\
         \bottomrule
     \end{tabular} 
     \caption{Training time and validation set mean RMSE 
@@ -250,7 +249,8 @@ to our inputs (or features).
 \end{itemize}
 
 \subsection*{Training Method}
-Use 10\% cross-validation with no data preprocessing, and train with SGD (Stochastic Gradient Descent) algorithm. Then, we train each cross-validation set for $5000$ epochs.
+Use 10\% cross-validation with no data preprocessing, and train with SGD (Stochastic Gradient Descent) algorithm. 
+Then, we train each cross-validation set for $7500$ epochs.
 
 We will create one base model that should perform good enough 
 and create a variations base on that model, that is train 
@@ -264,16 +264,16 @@ We then have a threshold at $0.5$ if output is more than $0.5$ then it is $1$ el
 Accuracy is then calculated by using this equation $\frac{TP+TN}{TP+TN+FN+FP}$ where $TP, TN, FN, FP$ come from confusion matrix.
 \subsubsection*{Cross-2-4-1}
 Our base model with 2 input nodes, 1 hidden layer with 4 nodes, and 1 output node train with $lr = 0.01$ and $momentum = 0.01$. 
-The training process takes about 122 seconds..
+The training process takes about 163 seconds..
 \subsubsection*{Cross-2-4-1 with no momentum}
 Same base model train with $lr = 0.01$ and $momentum = 0.0$.
-The training process takes about 122 seconds.
+The training process takes about 167 seconds.
 \subsubsection*{Cross-2-4-1 with smaller learning rate}
 Same base model train with $lr = 0.0001$ and $momentum = 0.01$.
-The training process takes about 124 seconds.
+The training process takes about 162 seconds.
 \subsubsection*{Cross-2-8-1}
 Bigger model that contains 2 input nodes, 1 hidden layer with 4 nodes, and 1 output node train with $lr = 0.01$ and $momentum = 0.01$.
-The training process takes about 230 seconds.
+The training process takes about 311 seconds.
 
 \begin{figure}[ht]
 	\begin{subfigure}{\textwidth}
@@ -374,19 +374,19 @@ The training process takes about 230 seconds.
 \subsection*{Analysis}
 From \cref*{table:2}, we can see that all Cross-2-4-1 models used around the 
 same amount of training time but only the base model is performing okay in terms of
-validation set mean accuracy. And the biggest model Cross-2-8-1 is performing much better than others at $98$\%
+validation set mean accuracy. And the biggest model Cross-2-8-1 is performing much better than others at $97$\%
 validation set mean accuracy but the training time used is also around 2 times other models training time.   
 
 \begin{table}[htp]
 	\centering
-	\begin{tabular}{l S[table-format=3] S[table-format=2]}
+	\begin{tabular}{l S[table-format=3] S[table-format=2.1]}
 		\toprule
         \multicolumn{1}{c}{Model} & {Training Time (seconds)} & {Validation Set Mean Accuracy (\%)} \\
         \midrule
-        Cross-2-4-1 & 122 & 89 \\
-        Cross-2-4-1 with no momentum & 122 & 79 \\
-        Cross-2-4-1 with small learniing rate & 124 & 81 \\
-        Cross-2-8-1 & 230 & 98 \\
+        Cross-2-4-1 & 163 & 90.5 \\
+        Cross-2-4-1 with no momentum & 167 & 89.5 \\
+        Cross-2-4-1 with small learniing rate & 162 & 51.0 \\
+        Cross-2-8-1 & 311 & 97.0 \\
         \bottomrule
     \end{tabular} 
 	\caption{Training time and validation set mean accuracy (red line on 

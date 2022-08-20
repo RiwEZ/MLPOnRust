@@ -7,9 +7,9 @@ pub struct Layer {
     pub w: Vec<Vec<f64>>,
     pub b: Vec<f64>,
     pub grads: Vec<Vec<f64>>,
-    pub prev_grads: Vec<Vec<f64>>,
+    pub w_prev_changes: Vec<Vec<f64>>,
     pub local_grads: Vec<f64>,
-    pub prev_local_grads: Vec<f64>,
+    pub b_prev_changes: Vec<f64>,
     pub act: activator::ActivationContainer,
 }
 
@@ -26,14 +26,14 @@ impl Layer {
         let mut outputs: Vec<f64> = vec![];
         let mut grads: Vec<Vec<f64>> = vec![];
         let mut local_grads: Vec<f64> = vec![];
-        let mut prev_grads: Vec<Vec<f64>> = vec![];
-        let mut prev_local_grads: Vec<f64> = vec![];
+        let mut w_prev_changes: Vec<Vec<f64>> = vec![];
+        let mut b_prev_changes: Vec<f64> = vec![];
         let mut b: Vec<f64> = vec![];
 
         for _ in 0..output_features {
             outputs.push(0.0);
             local_grads.push(0.0);
-            prev_local_grads.push(0.0);
+            b_prev_changes.push(0.0);
             b.push(bias);
 
             let mut w: Vec<f64> = vec![];
@@ -48,7 +48,7 @@ impl Layer {
             }
             weights.push(w);
             grads.push(g.clone());
-            prev_grads.push(g);
+            w_prev_changes.push(g);
         }
         Layer {
             inputs,
@@ -56,9 +56,9 @@ impl Layer {
             w: weights,
             b,
             grads,
-            prev_grads,
+            w_prev_changes,
             local_grads,
-            prev_local_grads,
+            b_prev_changes,
             act,
         }
     }
@@ -84,10 +84,14 @@ impl Layer {
 
     pub fn update(&mut self, lr: f64, momentum: f64) {
         for j in 0..self.w.len() {
-            self.b[j] -= momentum * self.prev_local_grads[j] + lr * self.local_grads[j]; // update each neuron bias
+            let delta_b = lr * self.local_grads[j] + momentum * self.b_prev_changes[j];
+            self.b[j] -= delta_b; // update each neuron bias
+            self.b_prev_changes[j] = delta_b;
             for i in 0..self.w[j].len() {
                 // update each weights
-                self.w[j][i] -= momentum * self.prev_grads[j][i] + lr * self.grads[j][i];
+                let delta_w = lr * self.grads[j][i] + momentum * self.w_prev_changes[j][i];
+                self.w[j][i] -= delta_w;
+                self.w_prev_changes[j][i] = delta_w;
             }
         }
     }
@@ -161,11 +165,11 @@ mod tests {
         assert_eq!(linear.b.len(), 3);
 
         assert_eq!(linear.grads.len(), 3);
-        assert_eq!(linear.prev_grads.len(), 3);
+        assert_eq!(linear.w_prev_changes.len(), 3);
         assert_eq!(linear.grads[0].len(), 2);
-        assert_eq!(linear.prev_grads[0].len(), 2);
+        assert_eq!(linear.w_prev_changes[0].len(), 2);
         assert_eq!(linear.local_grads.len(), 3);
-        assert_eq!(linear.prev_local_grads.len(), 3);
+        assert_eq!(linear.b_prev_changes.len(), 3);
     }
 
     #[test]

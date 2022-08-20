@@ -69,7 +69,7 @@ pub fn cross_fit(
 
     let dataset = data::cross_dataset()?;
     let mut loss = loss::Loss::mse();
-    let epochs = 5000;
+    let epochs = 7500;
 
     let mut valid_acc: Vec<f64> = vec![];
     let mut train_acc: Vec<f64> = vec![];

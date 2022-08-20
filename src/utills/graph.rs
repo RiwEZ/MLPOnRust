@@ -25,13 +25,8 @@ impl LossGraph {
         root: &DrawingArea<BitMapBackend, Shift>,
         loss_vec: &Vec<f64>,
         valid_loss_vec: &Vec<f64>,
+        max_loss: f64
     ) -> Result<(), Box<dyn Error>> {
-        let max_loss1 = loss_vec.iter().fold(f64::NAN, |max, &val| val.max(max));
-        let max_loss2 = valid_loss_vec
-            .iter()
-            .fold(f64::NAN, |max, &val| val.max(max));
-        let max_loss = max_loss1.max(max_loss2);
-
         let min_loss1 = loss_vec.iter().fold(f64::NAN, |min, &val| val.min(min));
         let min_loss2 = valid_loss_vec
             .iter()
@@ -73,6 +68,19 @@ impl LossGraph {
         Ok(())
     }
 
+    pub fn max_loss(&self) -> f64 {
+        f64::max(
+            self.loss.iter().fold(f64::NAN, |max, vec| {
+                let max_loss = vec.iter().fold(f64::NAN, |max, &val| val.max(max));
+                f64::max(max_loss, max)
+            }),
+            self.valid_loss.iter().fold(f64::NAN, |max, vec| {
+                let max_loss = vec.iter().fold(f64::NAN, |max, &val| val.max(max));
+                f64::max(max_loss, max)
+            })
+        )
+    }
+
     pub fn draw(&self, path: String) -> Result<(), Box<dyn Error>> {
         let root = BitMapBackend::new(&path, (2000, 1000)).into_drawing_area();
         root.fill(&WHITE)?;
@@ -81,12 +89,12 @@ impl LossGraph {
 
         let mut loss_iter = self.loss.iter();
         let mut valid_loss_iter = self.valid_loss.iter();
-
+        let max_loss = self.max_loss();
         for (drawing_area, idx) in drawing_areas.iter().zip(1..) {
             if let (Some(loss_vec), Some(valid_loss_vec)) =
                 (loss_iter.next(), valid_loss_iter.next())
             {
-                self.draw_loss(idx, drawing_area, loss_vec, valid_loss_vec)?;
+                self.draw_loss(idx, drawing_area, loss_vec, valid_loss_vec, max_loss)?;
             }
         }
         Ok(())

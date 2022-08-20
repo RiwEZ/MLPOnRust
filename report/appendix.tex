@@ -30,174 +30,174 @@ fn main() -> Result<(), Box<dyn Error>> {
 \end{minted}
 \noindent flood/mod.rs
 \begin{minted}[fontsize=\footnotesize, bgcolor=bg]{rust}
-//! Contains training code for variations of flood dataset models.
-use super::activator;
-use super::loss;
-use super::model;
-use super::utills;
-
-use model::{Layer, Net};
-use std::error::Error;
-use std::fs;
-use std::io::Write;
-use std::time::{Duration, Instant};
-use utills::data;
-use utills::graph;
-use utills::io;
-
-pub fn flood_8_4_1(
-    lr: f64,
-    momentum: f64,
-    folder: &str,
-    standardize: bool,
-) -> Result<(), Box<dyn Error>> {
-    fn model() -> Net {
-        let mut layers: Vec<model::Layer> = vec![];
-        layers.push(Layer::new(8, 4, 1.0, activator::sigmoid()));
-        layers.push(Layer::new(4, 1, 1.0, activator::linear()));
-        Net::from_layers(layers)
+    //! Contains training code for variations of flood dataset models.
+    use super::activator;
+    use super::loss;
+    use super::model;
+    use super::utills;
+    
+    use model::{Layer, Net};
+    use std::error::Error;
+    use std::fs;
+    use std::io::Write;
+    use std::time::{Duration, Instant};
+    use utills::data;
+    use utills::graph;
+    use utills::io;
+    
+    pub fn flood_8_4_1(
+        lr: f64,
+        momentum: f64,
+        folder: &str,
+        standardize: bool,
+    ) -> Result<(), Box<dyn Error>> {
+        fn model() -> Net {
+            let mut layers: Vec<model::Layer> = vec![];
+            layers.push(Layer::new(8, 4, 1.0, activator::sigmoid()));
+            layers.push(Layer::new(4, 1, 1.0, activator::linear()));
+            Net::from_layers(layers)
+        }
+    
+        flood_fit(&model, lr, momentum, folder, standardize)?;
+        Ok(())
     }
-
-    flood_fit(&model, lr, momentum, folder, standardize)?;
-    Ok(())
-}
-
-pub fn flood_8_8_1(lr: f64, momentum: f64, folder: &str) -> Result<(), Box<dyn Error>> {
-    fn model() -> Net {
-        let mut layers: Vec<model::Layer> = vec![];
-        layers.push(Layer::new(8, 8, 1.0, activator::sigmoid()));
-        layers.push(Layer::new(8, 1, 1.0, activator::linear()));
-        Net::from_layers(layers)
+    
+    pub fn flood_8_8_1(lr: f64, momentum: f64, folder: &str) -> Result<(), Box<dyn Error>> {
+        fn model() -> Net {
+            let mut layers: Vec<model::Layer> = vec![];
+            layers.push(Layer::new(8, 8, 1.0, activator::sigmoid()));
+            layers.push(Layer::new(8, 1, 1.0, activator::linear()));
+            Net::from_layers(layers)
+        }
+    
+        flood_fit(&model, lr, momentum, folder, true)?;
+        Ok(())
     }
-
-    flood_fit(&model, lr, momentum, folder, true)?;
-    Ok(())
-}
-
-fn mse_to_rmse(mse: &Vec<f64>) -> Vec<f64> {
-    mse.iter().map(|v| {v.sqrt()}).collect()
-}
-
-pub fn flood_fit(
-    model: &dyn Fn() -> Net,
-    lr: f64,
-    momentum: f64,
-    folder: &str,
-    standardize: bool,
-) -> Result<(), Box<dyn Error>> {
-    let (models, img) = utills::io::check_dir(folder)?;
-
-    let dataset = data::flood_dataset()?;
-    let mut loss = loss::Loss::mse();
-    let epochs = 1000;
-
-    let mut cv_valid_loss: Vec<f64> = vec![];
-    let mut cv_train_loss: Vec<f64> = vec![];
-
-    let mut r2_score: Vec<f64> = vec![];
-    let mut loss_g = graph::LossGraph::new();
-    let start = Instant::now();
-    for (j, dt) in dataset.cross_valid_set(0.1).iter().enumerate() {
-        // creating a model
-        let mut net = model();
-
-        // get training set and validation set
-        let training_set = if standardize {
-            data::standardization(&dt.0, dt.0.mean(), dt.0.std())
-        } else {
-            dt.0.clone()
-        };
-
-        let validation_set = if standardize {
-            data::standardization(&dt.1, dt.0.mean(), dt.0.std())
-        } else {
-            dt.1.clone()
-        };
-        //let training_set = data::minmax_norm(&dt.0, dt.0.min(), dt.0.max());
-        //let validation_set = data::minmax_norm(&dt.1, dt.1.min(), dt.1.max());
-
-        // training
-        let mut loss_vec: Vec<f64> = vec![];
-        let mut valid_loss_vec: Vec<f64> = vec![];
-        for i in 0..epochs {
-            let mut running_loss: f64 = 0.0;
-
-            for data in training_set.get_shuffled() {
-                let result = net.forward(&data.inputs);
-
-                running_loss += loss.criterion(&result, &data.labels);
-                loss.backward(&mut net.layers);
-
-                net.update(lr, momentum);
-            }
-            running_loss /= training_set.len() as f64;
-            loss_vec.push(running_loss);
-
-            let mut valid_loss: f64 = 0.0;
-            for data in validation_set.get_datas() {
-                let result = net.forward(&data.inputs);
-                valid_loss += loss.criterion(&result, &data.labels);
-            }
-            valid_loss /= validation_set.get_datas().len() as f64;
-            valid_loss_vec.push(valid_loss);
-
-            if i == epochs - 1 {
-                // log score
-                let label_mean = validation_set.get_datas().iter().fold(0f64, |mean, val| {
-                    mean + val.labels[0] / validation_set.len() as f64
-                });
-
-                let mut total_sum_sqr = 0f64;
-                let mut sum_sqr = 0f64;
-
+    
+    fn mse_to_rmse(mse: &Vec<f64>) -> Vec<f64> {
+        mse.iter().map(|v| v.sqrt()).collect()
+    }
+    
+    pub fn flood_fit(
+        model: &dyn Fn() -> Net,
+        lr: f64,
+        momentum: f64,
+        folder: &str,
+        standardize: bool,
+    ) -> Result<(), Box<dyn Error>> {
+        let (models, img) = utills::io::check_dir(folder)?;
+    
+        let dataset = data::flood_dataset()?;
+        let mut loss = loss::Loss::mse();
+        let epochs = 1000;
+    
+        let mut cv_valid_loss: Vec<f64> = vec![];
+        let mut cv_train_loss: Vec<f64> = vec![];
+    
+        let mut r2_score: Vec<f64> = vec![];
+        let mut loss_g = graph::LossGraph::new();
+        let start = Instant::now();
+        for (j, dt) in dataset.cross_valid_set(0.1).iter().enumerate() {
+            // creating a model
+            let mut net = model();
+    
+            // get training set and validation set
+            let training_set = if standardize {
+                data::standardization(&dt.0, dt.0.mean(), dt.0.std())
+            } else {
+                dt.0.clone()
+            };
+    
+            let validation_set = if standardize {
+                data::standardization(&dt.1, dt.0.mean(), dt.0.std())
+            } else {
+                dt.1.clone()
+            };
+            //let training_set = data::minmax_norm(&dt.0, dt.0.min(), dt.0.max());
+            //let validation_set = data::minmax_norm(&dt.1, dt.1.min(), dt.1.max());
+    
+            // training
+            let mut loss_vec: Vec<f64> = vec![];
+            let mut valid_loss_vec: Vec<f64> = vec![];
+            for i in 0..epochs {
+                let mut running_loss: f64 = 0.0;
+    
+                for data in training_set.get_shuffled() {
+                    let result = net.forward(&data.inputs);
+    
+                    running_loss += loss.criterion(&result, &data.labels);
+                    loss.backward(&mut net.layers);
+    
+                    net.update(lr, momentum);
+                }
+                running_loss /= training_set.len() as f64;
+                loss_vec.push(running_loss);
+    
+                let mut valid_loss: f64 = 0.0;
                 for data in validation_set.get_datas() {
                     let result = net.forward(&data.inputs);
-                    sum_sqr += (data.labels[0] - result[0]).powi(2);
-                    total_sum_sqr += (data.labels[0] - label_mean).powi(2);
+                    valid_loss += loss.criterion(&result, &data.labels);
                 }
-
-                r2_score.push(1.0 - (sum_sqr / total_sum_sqr));
-                cv_valid_loss.push(valid_loss);
-                cv_train_loss.push(running_loss);
+                valid_loss /= validation_set.get_datas().len() as f64;
+                valid_loss_vec.push(valid_loss);
+    
+                if i == epochs - 1 {
+                    // log score
+                    let label_mean = validation_set.get_datas().iter().fold(0f64, |mean, val| {
+                        mean + val.labels[0] / validation_set.len() as f64
+                    });
+    
+                    let mut total_sum_sqr = 0f64;
+                    let mut sum_sqr = 0f64;
+    
+                    for data in validation_set.get_datas() {
+                        let result = net.forward(&data.inputs);
+                        sum_sqr += (data.labels[0] - result[0]).powi(2);
+                        total_sum_sqr += (data.labels[0] - label_mean).powi(2);
+                    }
+    
+                    r2_score.push(1.0 - (sum_sqr / total_sum_sqr));
+                    cv_valid_loss.push(valid_loss);
+                    cv_train_loss.push(running_loss);
+                }
+    
+                println!(
+                    "iteration: {}, epoch: {}, loss: {:.6}, valid_loss: {:.6}",
+                    j, i, running_loss, valid_loss
+                );
             }
-
-            println!(
-                "iteration: {}, epoch: {}, loss: {:.6}, valid_loss: {:.6}",
-                j, i, running_loss, valid_loss
-            );
+    
+            loss_g.add_loss(loss_vec, valid_loss_vec);
+            io::save(&net.layers, format!("{}/{}.json", models, j))?;
         }
-
-        loss_g.add_loss(loss_vec, valid_loss_vec);
-        io::save(&net.layers, format!("{}/{}.json", models, j))?;
+        let duration: Duration = start.elapsed();
+    
+        let mut file = fs::File::create(format!("{}/result.txt", models))?;
+        file.write_all(
+            format!(
+                "cv_score: {:?}\n\nr2_score: {:?}\n\ntime used: {:?}",
+                cv_valid_loss, r2_score, duration
+            )
+            .as_bytes(),
+        )?;
+    
+        loss_g.draw(format!("{}/loss.png", img))?;
+    
+        graph::draw_2hist(
+            [mse_to_rmse(&cv_valid_loss), mse_to_rmse(&cv_train_loss)],
+            "Validation/Training RMSE",
+            ("Iterations", "Validataion/Training RMSE"),
+            format!("{}/cv_l.png", img),
+        )?;
+    
+        graph::draw_histogram(
+            r2_score,
+            "Cross Validation R2 Scores",
+            ("Iterations", "R2 Scores"),
+            format!("{}/r2_score.png", img),
+        )?;
+        Ok(())
     }
-    let duration: Duration = start.elapsed();
-
-    let mut file = fs::File::create(format!("{}/result.txt", models))?;
-    file.write_all(
-        format!(
-            "cv_score: {:?}\n\nr2_score: {:?}\n\ntime used: {:?}",
-            cv_valid_loss, r2_score, duration
-        )
-        .as_bytes(),
-    )?;
-
-    loss_g.draw(format!("{}/loss.png", img))?;
-
-    graph::draw_2hist(
-        [mse_to_rmse(&cv_valid_loss), mse_to_rmse(&cv_train_loss)],
-        "Validation/Training RMSE",
-        ("Iterations", "Validataion/Training RMSE"),
-        format!("{}/cv_l.png", img),
-    )?;
-
-    graph::draw_histogram(
-        r2_score,
-        "Cross Validation R2 Scores",
-        ("Iterations", "R2 Scores"),
-        format!("{}/r2_score.png", img),
-    )?;
-    Ok(())
-}
 \end{minted}
 \noindent cross/mod.rs
 \begin{minted}[fontsize=\footnotesize, bgcolor=bg]{rust}
@@ -272,7 +272,7 @@ pub fn cross_fit(
 
     let dataset = data::cross_dataset()?;
     let mut loss = loss::Loss::mse();
-    let epochs = 5000;
+    let epochs = 7500;
 
     let mut valid_acc: Vec<f64> = vec![];
     let mut train_acc: Vec<f64> = vec![];
@@ -369,9 +369,9 @@ pub fn cross_fit(
         pub w: Vec<Vec<f64>>,
         pub b: Vec<f64>,
         pub grads: Vec<Vec<f64>>,
-        pub prev_grads: Vec<Vec<f64>>,
+        pub w_prev_changes: Vec<Vec<f64>>,
         pub local_grads: Vec<f64>,
-        pub prev_local_grads: Vec<f64>,
+        pub b_prev_changes: Vec<f64>,
         pub act: activator::ActivationContainer,
     }
     
@@ -388,14 +388,14 @@ pub fn cross_fit(
             let mut outputs: Vec<f64> = vec![];
             let mut grads: Vec<Vec<f64>> = vec![];
             let mut local_grads: Vec<f64> = vec![];
-            let mut prev_grads: Vec<Vec<f64>> = vec![];
-            let mut prev_local_grads: Vec<f64> = vec![];
+            let mut w_prev_changes: Vec<Vec<f64>> = vec![];
+            let mut b_prev_changes: Vec<f64> = vec![];
             let mut b: Vec<f64> = vec![];
     
             for _ in 0..output_features {
                 outputs.push(0.0);
                 local_grads.push(0.0);
-                prev_local_grads.push(0.0);
+                b_prev_changes.push(0.0);
                 b.push(bias);
     
                 let mut w: Vec<f64> = vec![];
@@ -410,7 +410,7 @@ pub fn cross_fit(
                 }
                 weights.push(w);
                 grads.push(g.clone());
-                prev_grads.push(g);
+                w_prev_changes.push(g);
             }
             Layer {
                 inputs,
@@ -418,9 +418,9 @@ pub fn cross_fit(
                 w: weights,
                 b,
                 grads,
-                prev_grads,
+                w_prev_changes,
                 local_grads,
-                prev_local_grads,
+                b_prev_changes,
                 act,
             }
         }
@@ -446,11 +446,14 @@ pub fn cross_fit(
     
         pub fn update(&mut self, lr: f64, momentum: f64) {
             for j in 0..self.w.len() {
-                // update each neuron bias
-                self.b[j] -= momentum * self.prev_local_grads[j] + lr * self.local_grads[j]; 
+                let delta_b = lr * self.local_grads[j] + momentum * self.b_prev_changes[j];
+                self.b[j] -= delta_b; // update each neuron bias
+                self.b_prev_changes[j] = delta_b;
                 for i in 0..self.w[j].len() {
                     // update each weights
-                    self.w[j][i] -= momentum * self.prev_grads[j][i] + lr * self.grads[j][i];
+                    let delta_w = lr * self.grads[j][i] + momentum * self.w_prev_changes[j][i];
+                    self.w[j][i] -= delta_w;
+                    self.w_prev_changes[j][i] = delta_w;
                 }
             }
         }
@@ -524,11 +527,11 @@ pub fn cross_fit(
             assert_eq!(linear.b.len(), 3);
     
             assert_eq!(linear.grads.len(), 3);
-            assert_eq!(linear.prev_grads.len(), 3);
+            assert_eq!(linear.w_prev_changes.len(), 3);
             assert_eq!(linear.grads[0].len(), 2);
-            assert_eq!(linear.prev_grads[0].len(), 2);
+            assert_eq!(linear.w_prev_changes[0].len(), 2);
             assert_eq!(linear.local_grads.len(), 3);
-            assert_eq!(linear.prev_local_grads.len(), 3);
+            assert_eq!(linear.b_prev_changes.len(), 3);
         }
     
         #[test]
@@ -707,8 +710,6 @@ impl Loss {
 
     pub fn backward(&self, layers: &mut Vec<model::Layer>) {
         for l in (0..layers.len()).rev() {
-            layers[l].prev_local_grads = layers[l].local_grads.clone(); // copied previous grad before update
-            layers[l].prev_grads = layers[l].grads.clone();
             // output layer
             if l == layers.len() - 1 {
                 for j in 0..layers[l].outputs.len() {
@@ -1034,13 +1035,8 @@ impl LossGraph {
         root: &DrawingArea<BitMapBackend, Shift>,
         loss_vec: &Vec<f64>,
         valid_loss_vec: &Vec<f64>,
+        max_loss: f64
     ) -> Result<(), Box<dyn Error>> {
-        let max_loss1 = loss_vec.iter().fold(f64::NAN, |max, &val| val.max(max));
-        let max_loss2 = valid_loss_vec
-            .iter()
-            .fold(f64::NAN, |max, &val| val.max(max));
-        let max_loss = max_loss1.max(max_loss2);
-
         let min_loss1 = loss_vec.iter().fold(f64::NAN, |min, &val| val.min(min));
         let min_loss2 = valid_loss_vec
             .iter()
@@ -1082,6 +1078,19 @@ impl LossGraph {
         Ok(())
     }
 
+    pub fn max_loss(&self) -> f64 {
+        f64::max(
+            self.loss.iter().fold(f64::NAN, |max, vec| {
+                let max_loss = vec.iter().fold(f64::NAN, |max, &val| val.max(max));
+                f64::max(max_loss, max)
+            }),
+            self.valid_loss.iter().fold(f64::NAN, |max, vec| {
+                let max_loss = vec.iter().fold(f64::NAN, |max, &val| val.max(max));
+                f64::max(max_loss, max)
+            })
+        )
+    }
+
     pub fn draw(&self, path: String) -> Result<(), Box<dyn Error>> {
         let root = BitMapBackend::new(&path, (2000, 1000)).into_drawing_area();
         root.fill(&WHITE)?;
@@ -1090,12 +1099,12 @@ impl LossGraph {
 
         let mut loss_iter = self.loss.iter();
         let mut valid_loss_iter = self.valid_loss.iter();
-
+        let max_loss = self.max_loss();
         for (drawing_area, idx) in drawing_areas.iter().zip(1..) {
             if let (Some(loss_vec), Some(valid_loss_vec)) =
                 (loss_iter.next(), valid_loss_iter.next())
             {
-                self.draw_loss(idx, drawing_area, loss_vec, valid_loss_vec)?;
+                self.draw_loss(idx, drawing_area, loss_vec, valid_loss_vec, max_loss)?;
             }
         }
         Ok(())
@@ -1320,7 +1329,6 @@ pub fn draw_confustion(matrix_vec: Vec<[[i32; 2]; 2]>, path: String) -> Result<(
     root.present()?;
     Ok(())
 }
-
 \end{minted}
 \noindent utills/io.rs
 \begin{minted}[fontsize=\footnotesize, bgcolor=bg]{rust}      

@@ -43,7 +43,7 @@ pub fn flood_8_8_1(lr: f64, momentum: f64, folder: &str) -> Result<(), Box<dyn E
 }
 
 fn mse_to_rmse(mse: &Vec<f64>) -> Vec<f64> {
-    mse.iter().map(|v| {v.sqrt()}).collect()
+    mse.iter().map(|v| v.sqrt()).collect()
 }
 
 pub fn flood_fit(

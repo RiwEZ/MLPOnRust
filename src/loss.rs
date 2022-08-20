@@ -58,8 +58,6 @@ impl Loss {
 
     pub fn backward(&self, layers: &mut Vec<model::Layer>) {
         for l in (0..layers.len()).rev() {
-            layers[l].prev_local_grads = layers[l].local_grads.clone(); // copied previous grad before update
-            layers[l].prev_grads = layers[l].grads.clone();
             // output layer
             if l == layers.len() - 1 {
                 for j in 0..layers[l].outputs.len() {
