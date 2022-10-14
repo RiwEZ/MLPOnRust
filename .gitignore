@@ -1,7 +1,7 @@
 /target
 /models
 /img
-/report/_minted-main
+_minted-main/
 
 ## Core latex/pdflatex auxiliary files:
 *.aux
@@ -24,3 +24,11 @@
 *.synctex.gz
 *.synctex.gz(busy)
 *.pdfsync
+
+## Bibliography auxiliary files (bibtex/biblatex/biber):
+*.bbl
+*.bcf
+*.blg
+*-blx.aux
+*-blx.bib
+*.run.xml
