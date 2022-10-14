@@ -1,6 +1,7 @@
 pub mod activator;
 pub mod cross;
 pub mod flood;
+pub mod wdbc;
 pub mod loss;
 pub mod model;
 pub mod utills;
@@ -9,8 +10,8 @@ use std::error::Error;
 use utills::data::un_standardization;
 
 fn main() -> Result<(), Box<dyn Error>> {
+    /*
     // training code
-
     flood::flood_8_4_1(0.01, 0.01, "flood-8-4-1", true)?; // 1
     flood::flood_8_4_1(0.01, 0.0, "flood-8-4-1_2", true)?; // 2
     flood::flood_8_4_1(0.0001, 0.01, "flood-8-4-1_3", true)?; // 3
@@ -20,6 +21,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     cross::cross_2_4_1(0.01, 0.0, "cross-2-4-1_2")?;
     cross::cross_2_4_1(0.0001, 0.01, "cross-2-4-1_3")?;
     cross::cross_2_8_1(0.01, 0.01, "cross-2-8-1")?;
+    */
 
     Ok(())
 }

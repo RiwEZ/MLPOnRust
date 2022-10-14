@@ -56,7 +56,7 @@ pub fn flood_fit(
     let (models, img) = utills::io::check_dir(folder)?;
 
     let dataset = data::flood_dataset()?;
-    let mut loss = loss::Loss::mse();
+    let mut loss = loss::Loss::square_err();
     let epochs = 1000;
 
     let mut cv_valid_loss: Vec<f64> = vec![];

@@ -68,7 +68,7 @@ pub fn cross_fit(
     let (models, img) = utills::io::check_dir(folder)?;
 
     let dataset = data::cross_dataset()?;
-    let mut loss = loss::Loss::mse();
+    let mut loss = loss::Loss::square_err();
     let epochs = 7500;
 
     let mut valid_acc: Vec<f64> = vec![];

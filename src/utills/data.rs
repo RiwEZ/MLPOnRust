@@ -204,6 +204,28 @@ pub fn cross_dataset() -> Result<DataSet, Box<dyn Error>> {
     Ok(DataSet::new(datas))
 }
 
+pub fn wdbc_dataset() -> Result<DataSet, Box<dyn Error>> {
+    let mut datas: Vec<Data> = vec![];
+    let mut lines = read_lines("data/wdbc.txt")?;
+    while let Some(Ok(line)) = lines.next() {
+        let mut inputs: Vec<f64> = vec![];
+        let mut labels: Vec<f64> = vec![]; // M (malignant) = 1.0, B (benign) = 0.0
+        let arr: Vec<&str> = line.split(",").collect();
+        if arr[1] == "M" {
+            labels.push(1.0);
+        }
+        else if arr[1] == "B" {
+            labels.push(0.0);
+        }
+        for w in &arr[2..] {
+            let v: f64 = w.parse()?;
+            inputs.push(v);
+        }
+        datas.push(Data {inputs, labels});
+    }   
+    Ok(DataSet::new(datas))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -225,7 +247,6 @@ mod tests {
             println!("{:?}", dt.get_datas());
         }
         */
-
         Ok(())
     }
 

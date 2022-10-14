@@ -8,8 +8,8 @@ pub struct Loss {
 }
 
 impl Loss {
-    /// Mean Squared Error
-    pub fn mse() -> Loss {
+    /// Squared Error
+    pub fn square_err() -> Loss {
         fn func(output: f64, desired: f64) -> f64 {
             0.5 * (output - desired).powi(2)
         }
@@ -109,19 +109,19 @@ mod tests {
 
     #[test]
     fn test_mse_func() {
-        assert_eq!((Loss::mse().func)(2.0, 1.0), 0.5);
-        assert_eq!((Loss::mse().func)(5.0, 0.0), 12.5);
+        assert_eq!((Loss::square_err().func)(2.0, 1.0), 0.5);
+        assert_eq!((Loss::square_err().func)(5.0, 0.0), 12.5);
     }
 
     #[test]
     fn test_mse_der() {
-        assert_eq!((Loss::mse().der)(2.0, 1.0), 1.0);
-        assert_eq!((Loss::mse().der)(5.0, 0.0), 5.0);
+        assert_eq!((Loss::square_err().der)(2.0, 1.0), 1.0);
+        assert_eq!((Loss::square_err().der)(5.0, 0.0), 5.0);
     }
 
     #[test]
     fn test_mse() {
-        let mut loss = Loss::mse();
+        let mut loss = Loss::square_err();
 
         let l = loss.criterion(&vec![2.0, 1.0, 0.0], &vec![0.0, 1.0, 2.0]);
         assert_eq!(l, 4.0);

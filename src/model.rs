@@ -29,6 +29,7 @@ impl Layer {
         let mut w_prev_changes: Vec<Vec<f64>> = vec![];
         let mut b_prev_changes: Vec<f64> = vec![];
         let mut b: Vec<f64> = vec![];
+        let mut parameters = 0;
 
         for _ in 0..output_features {
             outputs.push(0.0);
@@ -109,11 +110,18 @@ impl Layer {
 #[derive(Debug)]
 pub struct Net {
     pub layers: Vec<Layer>,
+    pub parameters: u64,
 }
 
 impl Net {
     pub fn from_layers(layers: Vec<Layer>) -> Net {
-        Net { layers }
+        let mut parameters: u64 = 0;
+        for l in &layers {
+            parameters += (l.w.len() * l.w[0].len()) as u64;
+            parameters += l.b.len() as u64;
+        }
+
+        Net { layers, parameters }
     }
 
     pub fn new(architecture: Vec<u64>) -> Net {
@@ -126,7 +134,7 @@ impl Net {
                 activator::sigmoid(),
             ))
         }
-        Net { layers }
+        Net::from_layers(layers)
     }
 
     pub fn zero_grad(&mut self) {
