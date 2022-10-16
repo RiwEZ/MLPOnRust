@@ -1,5 +1,9 @@
 //! Genictic Algorithm Utility
+use std::f64::consts::E;
+
 use rand::{
+    distributions::Uniform,
+    prelude::Distribution,
     seq::{index::sample, SliceRandom},
     Rng,
 };
@@ -32,11 +36,10 @@ pub fn mating(pop: &Vec<Individual>) -> Vec<Individual> {
     for _ in 0..pop.len() {
         let parent: Vec<_> = pop.choose_multiple(&mut rand::thread_rng(), 2).collect();
         let length = parent[0].chromosome.len();
-        let indexes: Vec<_> = sample(&mut rand, length, length / 2).into_vec();
 
         let mut new_chromosome: Vec<f64> = vec![];
         for i in 0..length {
-            if indexes.contains(&i) {
+            if rand.gen_bool(0.5) {
                 new_chromosome.push(parent[0].chromosome[i]);
             } else {
                 new_chromosome.push(parent[1].chromosome[i]);
@@ -47,16 +50,42 @@ pub fn mating(pop: &Vec<Individual>) -> Vec<Individual> {
     new_pop
 }
 
-pub fn mutate(pop: &Vec<Individual>, amount: usize) -> Vec<Individual> {
+/// strong mutation
+pub fn mutate(pop: &Vec<Individual>, amount: usize, p_m: f64) -> Vec<Individual> {
     let mut new_pop: Vec<Individual> = vec![];
     let mut rand = rand::thread_rng();
     for i in 0..amount {
-        let n = rand.gen_range(0..pop[i].chromosome.len() / 2);
-        let indexes: Vec<_> = sample(&mut rand, pop[i].chromosome.len(), n).into_vec();
         let mut ind_clone = pop[i].clone();
-        for i in indexes {
-            let change = 2f64 * rand::random::<f64>() - 1f64;
-            ind_clone.chromosome[i] += change;
+        for j in 0..pop[i].chromosome.len() {
+            let between = Uniform::from(0.0..=1.0);
+            if between.sample(&mut rand) < p_m {
+                let change = 2f64 * rand::random::<f64>() - 1f64;
+                ind_clone.chromosome[j] += change;
+            }
+        }
+        new_pop.push(ind_clone);
+    }
+    new_pop
+}
+
+/// non-uniform strong mutation
+pub fn mutate_nonuni(
+    pop: &Vec<Individual>,
+    amount: usize,
+    p_m: f64,
+    curr_gen: usize,
+) -> Vec<Individual> {
+    let mut new_pop: Vec<Individual> = vec![];
+    let mut rand = rand::thread_rng();
+    let beta = 1.0;
+    for i in 0..amount {
+        let mut ind_clone = pop[i].clone();
+        for j in 0..pop[i].chromosome.len() {
+            let between = Uniform::from(0.0..=1.0);
+            if between.sample(&mut rand) < (p_m * E.powf(-beta * curr_gen as f64)) {
+                let change = 2f64 * rand::random::<f64>() - 1f64;
+                ind_clone.chromosome[j] += change;
+            }
         }
         new_pop.push(ind_clone);
     }
@@ -165,7 +194,7 @@ mod tests {
         }
 
         let res = mating(&pop);
-        let mut_res = mutate(&pop, 4);
+        let mut_res = mutate(&pop, 4, 0.5);
         assert_eq!(res.len(), pop.len());
         assert_eq!(mut_res.len(), pop.len());
 

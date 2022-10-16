@@ -151,15 +151,15 @@ pub fn flood_fit(
 
     loss_g.draw(format!("{}/loss.png", img))?;
 
-    graph::draw_2hist(
-        [mse_to_rmse(&cv_valid_loss), mse_to_rmse(&cv_train_loss)],
+    graph::draw_acc_2hist(
+        [&mse_to_rmse(&cv_valid_loss), &mse_to_rmse(&cv_train_loss)],
         "Validation/Training RMSE",
         ("Iterations", "Validataion/Training RMSE"),
         format!("{}/cv_l.png", img),
     )?;
 
-    graph::draw_histogram(
-        r2_score,
+    graph::draw_acc_hist(
+        &r2_score,
         "Cross Validation R2 Scores",
         ("Iterations", "R2 Scores"),
         format!("{}/r2_score.png", img),

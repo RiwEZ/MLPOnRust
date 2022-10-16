@@ -102,14 +102,14 @@ impl LossGraph {
 }
 
 /// Draw histogram of given datas
-pub fn draw_histogram(
-    datas: Vec<f64>,
+/// axes_desc - (for x, for y)
+pub fn draw_acc_hist(
+    datas: &Vec<f64>,
     title: &str,
     axes_desc: (&str, &str),
     path: String,
 ) -> Result<(), Box<dyn Error>> {
     let n = datas.len();
-    let max_y = datas.iter().fold(f64::NAN, |max, &val| val.max(max));
     let mean = datas
         .iter()
         .fold(0.0f64, |mean, &val| mean + val / n as f64);
@@ -122,15 +122,17 @@ pub fn draw_histogram(
         .margin(20)
         .x_label_area_size(50)
         .y_label_area_size(60)
-        .build_cartesian_2d((1..n).into_segmented(), 0.0..max_y)?
-        .set_secondary_coord(1..n, 0.0..max_y);
+        .build_cartesian_2d((1..n).into_segmented(), 0.0..1.0)?
+        .set_secondary_coord(1..n, 0.0..1.0);
 
     chart
         .configure_mesh()
         .disable_x_mesh()
+        .y_max_light_lines(0)
         .y_desc(axes_desc.1)
         .x_desc(axes_desc.0)
         .axis_desc_style(("Hack", 20))
+        .y_labels(3)
         .draw()?;
 
     let hist = Histogram::vertical(&chart)
@@ -159,16 +161,13 @@ pub fn draw_histogram(
     Ok(())
 }
 
-pub fn draw_2hist(
-    datas: [Vec<f64>; 2],
+pub fn draw_acc_2hist(
+    datas: [&Vec<f64>; 2],
     title: &str,
     axes_desc: (&str, &str),
     path: String,
 ) -> Result<(), Box<dyn Error>> {
     let n = datas.iter().fold(0f64, |max, l| max.max(l.len() as f64));
-    let max_y = datas.iter().fold(0f64, |max, l| {
-        max.max(l.iter().fold(f64::NAN, |v_max, &v| v.max(v_max)))
-    });
     let mean: Vec<f64> = datas
         .iter()
         .map(|l| {
@@ -185,15 +184,17 @@ pub fn draw_2hist(
         .margin(20)
         .x_label_area_size(50)
         .y_label_area_size(60)
-        .build_cartesian_2d((1..n as u32).into_segmented(), 0.0..max_y)?
-        .set_secondary_coord(0.0..n, 0.0..max_y);
+        .build_cartesian_2d((1..n as u32).into_segmented(), 0.0..1.0)?
+        .set_secondary_coord(0.0..n, 0.0..1.0);
 
     chart
         .configure_mesh()
         .disable_x_mesh()
+        .y_max_light_lines(0)
         .y_desc(axes_desc.1)
         .x_desc(axes_desc.0)
-        .axis_desc_style(("Hack", 20))
+        .axis_desc_style(("Hack", 30))
+        .y_labels(3)
         .draw()?;
 
     let a = datas[0].iter().zip(0..).map(|(y, x)| {
