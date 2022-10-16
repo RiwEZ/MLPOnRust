@@ -1,10 +1,10 @@
 pub mod activator;
 pub mod cross;
 pub mod flood;
-pub mod wdbc;
 pub mod loss;
 pub mod model;
 pub mod utills;
+pub mod wdbc;
 
 use std::error::Error;
 use utills::data::un_standardization;

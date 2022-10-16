@@ -25,7 +25,7 @@ impl LossGraph {
         root: &DrawingArea<BitMapBackend, Shift>,
         loss_vec: &Vec<f64>,
         valid_loss_vec: &Vec<f64>,
-        max_loss: f64
+        max_loss: f64,
     ) -> Result<(), Box<dyn Error>> {
         let min_loss1 = loss_vec.iter().fold(f64::NAN, |min, &val| val.min(min));
         let min_loss2 = valid_loss_vec
@@ -77,7 +77,7 @@ impl LossGraph {
             self.valid_loss.iter().fold(f64::NAN, |max, vec| {
                 let max_loss = vec.iter().fold(f64::NAN, |max, &val| val.max(max));
                 f64::max(max_loss, max)
-            })
+            }),
         )
     }
 

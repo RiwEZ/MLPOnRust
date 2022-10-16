@@ -9,31 +9,9 @@ use std::error::Error;
 use std::fs;
 use std::io::Write;
 use std::time::{Duration, Instant};
-use utills::data;
+use utills::data::{self, confusion_count};
 use utills::graph;
 use utills::io;
-
-fn confusion_count(matrix: &mut [[i32; 2]; 2], result: &Vec<f64>, label: &Vec<f64>) {
-    let threshold = 0.5;
-    if result[0] > threshold {
-        // true positive
-        if label[0] == 1.0 {
-            matrix[0][0] += 1
-        } else {
-            // false negative
-            matrix[1][0] += 1
-        }
-    } else if result[0] <= threshold {
-        // true negative
-        if label[0] == 0.0 {
-            matrix[1][1] += 1
-        }
-        // false positive
-        else {
-            matrix[0][1] += 1
-        }
-    }
-}
 
 pub fn cross_2_4_1(lr: f64, momentum: f64, folder: &str) -> Result<(), Box<dyn Error>> {
     fn model() -> Net {

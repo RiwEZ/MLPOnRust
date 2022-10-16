@@ -102,6 +102,28 @@ impl DataSet {
     }
 }
 
+pub fn confusion_count(matrix: &mut [[i32; 2]; 2], result: &Vec<f64>, label: &Vec<f64>) {
+    let threshold = 0.5;
+    if result[0] > threshold {
+        // true positive
+        if label[0] == 1.0 {
+            matrix[0][0] += 1
+        } else {
+            // false negative
+            matrix[1][0] += 1
+        }
+    } else if result[0] <= threshold {
+        // true negative
+        if label[0] == 0.0 {
+            matrix[1][1] += 1
+        }
+        // false positive
+        else {
+            matrix[0][1] += 1
+        }
+    }
+}
+
 pub fn minmax_norm(dataset: &DataSet, min: f64, max: f64) -> DataSet {
     let datas: Vec<Data> = dataset
         .get_datas()
@@ -213,16 +235,15 @@ pub fn wdbc_dataset() -> Result<DataSet, Box<dyn Error>> {
         let arr: Vec<&str> = line.split(",").collect();
         if arr[1] == "M" {
             labels.push(1.0);
-        }
-        else if arr[1] == "B" {
+        } else if arr[1] == "B" {
             labels.push(0.0);
         }
         for w in &arr[2..] {
             let v: f64 = w.parse()?;
             inputs.push(v);
         }
-        datas.push(Data {inputs, labels});
-    }   
+        datas.push(Data { inputs, labels });
+    }
     Ok(DataSet::new(datas))
 }
 
