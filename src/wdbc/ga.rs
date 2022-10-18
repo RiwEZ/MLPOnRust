@@ -35,16 +35,14 @@ pub fn mating(pop: &Vec<Individual>) -> Vec<Individual> {
     let mut new_pop: Vec<Individual> = vec![];
     for _ in 0..pop.len() {
         let parent: Vec<_> = pop.choose_multiple(&mut rand::thread_rng(), 2).collect();
-        let length = parent[0].chromosome.len();
 
-        let mut new_chromosome: Vec<f64> = vec![];
-        for i in 0..length {
-            if rand.gen_bool(0.5) {
-                new_chromosome.push(parent[0].chromosome[i]);
-            } else {
-                new_chromosome.push(parent[1].chromosome[i]);
-            }
-        }
+        let new_chromosome: Vec<f64> = parent[0]
+            .chromosome
+            .iter()
+            .zip(parent[1].chromosome.iter())
+            .map(|(p0, p1)| if rand.gen_bool(0.5) { *p0 } else { *p1 })
+            .collect();
+
         new_pop.push(Individual::new(new_chromosome));
     }
     new_pop
@@ -92,8 +90,9 @@ pub fn mutate_nonuni(
     new_pop
 }
 
-/// create inital population of net from layers
-/// return pop and net total parameters
+/// Create inital population of MLP from layers
+///
+/// return: population
 pub fn init_pop(net: &Net, amount: u32) -> Vec<Individual> {
     let mut pop: Vec<Individual> = vec![];
     for _ in 0..(amount) {
@@ -122,16 +121,17 @@ pub fn assign_ind(net: &mut Net, individual: &Individual) {
     let mut idx: usize = 0;
 
     for l in &mut net.layers {
-        for output in &mut l.w {
-            for i in 0..output.len() {
-                output[i] = individual.chromosome[idx];
+        l.w.iter_mut().for_each(|w_j| {
+            w_j.iter_mut().for_each(|w_ji| {
+                *w_ji = individual.chromosome[idx];
                 idx += 1;
-            }
-        }
-        for i in 0..l.b.len() {
-            l.b[i] = individual.chromosome[idx];
+            })
+        });
+
+        l.b.iter_mut().for_each(|b_i| {
+            *b_i = individual.chromosome[idx];
             idx += 1;
-        }
+        });
     }
 }
 

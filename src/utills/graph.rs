@@ -182,8 +182,8 @@ pub fn draw_acc_2hist(
     let mut chart = ChartBuilder::on(&root)
         .caption(title, ("Hack", 44, FontStyle::Bold).into_font())
         .margin(20)
-        .x_label_area_size(50)
-        .y_label_area_size(60)
+        .x_label_area_size(70)
+        .y_label_area_size(80)
         .build_cartesian_2d((1..n as u32).into_segmented(), 0.0..1.0)?
         .set_secondary_coord(0.0..n, 0.0..1.0);
 
@@ -195,6 +195,7 @@ pub fn draw_acc_2hist(
         .x_desc(axes_desc.0)
         .axis_desc_style(("Hack", 30))
         .y_labels(3)
+        .label_style(("Hack", 20))
         .draw()?;
 
     let a = datas[0].iter().zip(0..).map(|(y, x)| {
@@ -220,7 +221,7 @@ pub fn draw_acc_2hist(
             v.iter().map(|i| (*i as f64, mean[0])),
             RED.filled().stroke_width(2),
         ))?
-        .label(format!("mean: {:.5}", mean[0]))
+        .label(format!("mean: {:.3}", mean[0]))
         .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &RED));
 
     chart
@@ -228,13 +229,12 @@ pub fn draw_acc_2hist(
             v.iter().map(|i| (*i as f64, mean[1])),
             BLUE.filled().stroke_width(2),
         ))?
-        .label(format!("mean: {:.5}", mean[1]))
+        .label(format!("mean: {:.3}", mean[1]))
         .legend(|(x, y)| PathElement::new(vec![(x, y), (x + 20, y)], &BLUE));
 
     chart
         .configure_series_labels()
-        .position(SeriesLabelPosition::UpperRight)
-        .label_font(("Hack", 14).into_font())
+        .label_font(("Hack", 20).into_font())
         .background_style(&WHITE)
         .border_style(&BLACK)
         .draw()?;
@@ -245,12 +245,39 @@ pub fn draw_acc_2hist(
 
 /// Draw confusion matrix
 pub fn draw_confustion(matrix_vec: Vec<[[i32; 2]; 2]>, path: String) -> Result<(), Box<dyn Error>> {
-    let root = BitMapBackend::new(&path, (2000, 1000)).into_drawing_area();
+    let root = BitMapBackend::new(&path, (2000, 1100)).into_drawing_area();
     root.fill(&WHITE)?;
-    // hardcode for 10 iteraions
-    let drawing_areas = root.split_evenly((2, 5));
-    let mut matrix_iter = matrix_vec.iter();
 
+    let (top, down) = root.split_vertically(1000);
+
+    let mut chart = ChartBuilder::on(&down)
+        .margin(20)
+        .margin_left(40)
+        .margin_right(40)
+        .x_label_area_size(20)
+        .build_cartesian_2d(0i32..50i32, 0i32..1i32)?;
+    chart
+        .configure_mesh()
+        .disable_y_axis()
+        .disable_y_mesh()
+        .x_labels(3)
+        .label_style(("Hack", 30))
+        .draw()?;
+
+    chart.draw_series((0..50).map(|x| {
+        Rectangle::new(
+            [(x, 0), (x + 1, 1)],
+            HSLColor(
+                240.0 / 360.0 - 240.0 / 360.0 * (x as f64 / 50.0),
+                0.7,
+                0.1 + 0.4 * x as f64 / 50.0,
+            )
+            .filled(),
+        )
+    }))?;
+    // hardcode for 10 iteraions
+    let drawing_areas = top.split_evenly((2, 5));
+    let mut matrix_iter = matrix_vec.iter();
     for (drawing_area, idx) in drawing_areas.iter().zip(1..) {
         if let Some(matrix) = matrix_iter.next() {
             let mut chart = ChartBuilder::on(&drawing_area)
@@ -281,9 +308,9 @@ pub fn draw_confustion(matrix_vec: Vec<[[i32; 2]; 2]>, path: String) -> Result<(
                         Rectangle::new(
                             [(x, y), (x + 1, y + 1)],
                             HSLColor(
-                                240.0 / 360.0 - 240.0 / 360.0 * (*v as f64 / 20.0),
+                                240.0 / 360.0 - 240.0 / 360.0 * (*v as f64 / 50.0),
                                 0.7,
-                                0.1 + 0.4 * *v as f64 / 20.0,
+                                0.1 + 0.4 * *v as f64 / 50.0,
                             )
                             .filled(),
                         )
@@ -316,7 +343,6 @@ pub fn draw_confustion(matrix_vec: Vec<[[i32; 2]; 2]>, path: String) -> Result<(
             )?;
         }
     }
-
     root.present()?;
     Ok(())
 }

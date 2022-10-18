@@ -92,13 +92,13 @@ pub fn cross_fit(
                 let mut matrix = [[0, 0], [0, 0]];
                 for data in validation_set.get_datas() {
                     let result = net.forward(&data.inputs);
-                    confusion_count(&mut matrix, &result, &data.labels);
+                    confusion_count(&mut matrix, &result, &data.labels, 0.5);
                 }
 
                 let mut matrix2 = [[0, 0], [0, 0]];
                 for data in training_set.get_datas() {
                     let result = net.forward(&data.inputs);
-                    confusion_count(&mut matrix2, &result, &data.labels);
+                    confusion_count(&mut matrix2, &result, &data.labels, 0.5);
                 }
                 valid_acc.push((matrix[0][0] + matrix[1][1]) as f64 / validation_set.len() as f64);
                 train_acc.push((matrix2[0][0] + matrix2[1][1]) as f64 / training_set.len() as f64);

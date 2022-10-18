@@ -29,7 +29,6 @@ impl Layer {
         let mut w_prev_changes: Vec<Vec<f64>> = vec![];
         let mut b_prev_changes: Vec<f64> = vec![];
         let mut b: Vec<f64> = vec![];
-        let mut parameters = 0;
 
         for _ in 0..output_features {
             outputs.push(0.0);
@@ -68,17 +67,23 @@ impl Layer {
         if inputs.len() != self.inputs.len() {
             panic!("forward: input size is wrong");
         }
-        let mut result: Vec<f64> = vec![];
-        for j in 0..self.outputs.len() {
-            let mut sum: f64 = 0.0;
-            // loop through input and add w*x + b to sum
-            for i in 0..inputs.len() {
-                sum += self.w[j][i] * inputs[i];
-            }
-            sum += self.b[j];
-            self.outputs[j] = sum;
-            result.push((self.act.func)(sum));
-        }
+
+        let result: Vec<f64> = self
+            .w
+            .iter()
+            .zip(self.b.iter())
+            .zip(self.outputs.iter_mut())
+            .map(|((w_j, b_j), o_j)| {
+                let sum = inputs
+                    .iter()
+                    .zip(w_j.iter())
+                    .fold(0.0, |s, (v, w_ji)| s + w_ji * v)
+                    + b_j;
+                *o_j = sum;
+                (self.act.func)(sum)
+            })
+            .collect();
+
         self.inputs = inputs.clone();
         result
     }
