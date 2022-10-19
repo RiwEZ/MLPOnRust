@@ -1,12 +1,7 @@
 //! Genictic Algorithm Utility
+pub mod selection;
+use rand::{distributions::Uniform, prelude::Distribution, seq::SliceRandom, Rng};
 use std::f64::consts::E;
-
-use rand::{
-    distributions::Uniform,
-    prelude::Distribution,
-    seq::{index::sample, SliceRandom},
-    Rng,
-};
 
 use crate::model::Net;
 
@@ -32,19 +27,19 @@ impl Individual {
 /// return result of mating of individual in the pool
 pub fn mating(pop: &Vec<Individual>) -> Vec<Individual> {
     let mut rand = rand::thread_rng();
-    let mut new_pop: Vec<Individual> = vec![];
-    for _ in 0..pop.len() {
-        let parent: Vec<_> = pop.choose_multiple(&mut rand::thread_rng(), 2).collect();
-
-        let new_chromosome: Vec<f64> = parent[0]
-            .chromosome
-            .iter()
-            .zip(parent[1].chromosome.iter())
-            .map(|(p0, p1)| if rand.gen_bool(0.5) { *p0 } else { *p1 })
-            .collect();
-
-        new_pop.push(Individual::new(new_chromosome));
-    }
+    let new_pop: Vec<Individual> = pop
+        .iter()
+        .map(|_| {
+            let parent: Vec<_> = pop.choose_multiple(&mut rand::thread_rng(), 2).collect();
+            let new_chromosome: Vec<f64> = parent[0]
+                .chromosome
+                .iter()
+                .zip(parent[1].chromosome.iter())
+                .map(|(p0, p1)| if rand.gen_bool(0.5) { *p0 } else { *p1 })
+                .collect();
+            Individual::new(new_chromosome)
+        })
+        .collect();
     new_pop
 }
 

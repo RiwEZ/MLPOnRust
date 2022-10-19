@@ -1,5 +1,6 @@
-use super::ga::Individual;
 use rand::seq::SliceRandom;
+
+use super::Individual;
 
 /// deterministic tournament
 pub fn d_tornament(pop: &Vec<Individual>) -> Vec<Individual> {

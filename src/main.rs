@@ -1,6 +1,7 @@
 pub mod activator;
 pub mod cross;
 pub mod flood;
+pub mod ga;
 pub mod loss;
 pub mod model;
 pub mod utills;
@@ -10,6 +11,8 @@ use std::error::Error;
 use utills::data::un_standardization;
 
 fn main() -> Result<(), Box<dyn Error>> {
+    wdbc::wdbc_30_15_1();
+
     /*
     // training code
     flood::flood_8_4_1(0.01, 0.01, "flood-8-4-1", true)?; // 1

@@ -3,6 +3,34 @@ use rand::prelude::SliceRandom;
 use serde::Deserialize;
 use std::error::Error;
 
+pub fn max(vec: &Vec<f64>) -> f64 {
+    vec.iter().fold(f64::NAN, |max, &v| v.max(max))
+}
+
+pub fn min(vec: &Vec<f64>) -> f64 {
+    vec.iter().fold(f64::NAN, |min, &v| v.min(min))
+}
+
+pub fn std(vec: &Vec<f64>, mean: f64) -> f64 {
+    let n = vec.len() as f64;
+    vec.iter()
+        .fold(0.0f64, |sum, &val| sum + (val - mean).powi(2) / n)
+        .sqrt()
+}
+
+pub fn mean(vec: &Vec<f64>) -> f64 {
+    let n = vec.len() as f64;
+    vec.iter().fold(0.0f64, |mean, &val| mean + val / n)
+}
+
+pub fn standardization(data: &Vec<f64>, mean: f64, std: f64) -> Vec<f64> {
+    data.iter().map(|x| (x - mean) / std).collect()
+}
+
+pub fn minmax_norm(data: &Vec<f64>, min: f64, max: f64) -> Vec<f64> {
+    data.iter().map(|x| (x - min) / (max - min)).collect()
+}
+
 #[derive(Debug, Clone)]
 pub struct Data {
     pub inputs: Vec<f64>,
@@ -60,35 +88,39 @@ impl DataSet {
     }
 
     pub fn max(&self) -> f64 {
-        self.data_points()
-            .iter()
-            .fold(f64::NAN, |max, &v| v.max(max))
+        max(&self.data_points())
     }
 
     pub fn min(&self) -> f64 {
-        self.data_points()
-            .iter()
-            .fold(f64::NAN, |min, &v| v.min(min))
+        min(&self.data_points())
     }
 
     pub fn std(&self) -> f64 {
-        let mean = self.mean();
-        let data_points = self.data_points();
-        let n = data_points.len() as f64;
-        data_points
-            .iter()
-            .fold(0.0f64, |sum, &val| sum + (val - mean).powi(2) / n)
-            .sqrt()
+        std(&self.data_points(), self.mean())
     }
 
     pub fn mean(&self) -> f64 {
-        let data_points = self.data_points();
-        let n = data_points.len() as f64;
-        data_points.iter().fold(0.0f64, |mean, &val| mean + val / n)
+        mean(&self.data_points())
     }
 
     pub fn len(&self) -> usize {
         self.datas.len()
+    }
+
+    pub fn standardization(&self) -> DataSet {
+        // this kind of wrong
+        let mean = self.mean();
+        let std = self.std();
+        let datas: Vec<Data> = self
+            .get_datas()
+            .into_iter()
+            .map(|dt| {
+                let inputs: Vec<f64> = standardization(&dt.inputs, mean, std);
+                let labels: Vec<f64> = standardization(&dt.labels, mean, std);
+                Data { inputs, labels }
+            })
+            .collect();
+        DataSet::new(datas)
     }
 
     pub fn get_datas(&self) -> Vec<Data> {
@@ -126,32 +158,6 @@ pub fn confusion_count(
             matrix[0][1] += 1
         }
     }
-}
-
-pub fn minmax_norm(dataset: &DataSet, min: f64, max: f64) -> DataSet {
-    let datas: Vec<Data> = dataset
-        .get_datas()
-        .into_iter()
-        .map(|dt| {
-            let inputs: Vec<f64> = dt.inputs.iter().map(|x| (x - min) / (max - min)).collect();
-            let labels: Vec<f64> = dt.labels.iter().map(|x| (x - min) / (max - min)).collect();
-            Data { inputs, labels }
-        })
-        .collect();
-    DataSet::new(datas)
-}
-
-pub fn standardization(dataset: &DataSet, mean: f64, std: f64) -> DataSet {
-    let datas: Vec<Data> = dataset
-        .get_datas()
-        .into_iter()
-        .map(|dt| {
-            let inputs: Vec<f64> = dt.inputs.iter().map(|x| (x - mean) / std).collect();
-            let labels: Vec<f64> = dt.labels.iter().map(|x| (x - mean) / std).collect();
-            Data { inputs, labels }
-        })
-        .collect();
-    DataSet::new(datas)
 }
 
 pub fn un_standardization(value: f64, mean: f64, std: f64) -> f64 {
@@ -231,23 +237,49 @@ pub fn cross_dataset() -> Result<DataSet, Box<dyn Error>> {
 }
 
 pub fn wdbc_dataset() -> Result<DataSet, Box<dyn Error>> {
-    let mut datas: Vec<Data> = vec![];
+    let mut labels: Vec<Vec<f64>> = vec![];
+    let mut features: Vec<Vec<f64>> = Vec::with_capacity(30);
     let mut lines = read_lines("data/wdbc.txt")?;
+    for _ in 0..30 {
+        features.push(vec![]);
+    }
     while let Some(Ok(line)) = lines.next() {
-        let mut inputs: Vec<f64> = vec![];
-        let mut labels: Vec<f64> = vec![]; // M (malignant) = 1.0, B (benign) = 0.0
         let arr: Vec<&str> = line.split(",").collect();
+        // M (malignant) = 1.0, B (benign) = 0.0
         if arr[1] == "M" {
-            labels.push(0.0);
+            labels.push(vec![0.0]);
         } else if arr[1] == "B" {
-            labels.push(1.0);
+            labels.push(vec![1.0]);
         }
+        let mut i = 0;
         for w in &arr[2..] {
             let v: f64 = w.parse()?;
-            inputs.push(v);
+            features[i].push(v);
+            i += 1
         }
-        datas.push(Data { inputs, labels });
     }
+
+    // standardization each column
+    for data in features.iter_mut() {
+        let mean = mean(&data);
+        let std = std(&data, mean);
+        let max = max(&data);
+        let min = min(&data);
+        *data = minmax_norm(&data, min, max);
+    }
+
+    let datas: Vec<Data> = labels
+        .iter()
+        .zip(0..)
+        .map(|(label, i)| {
+            let inputs: Vec<f64> = features.iter().map(|x| x[i]).collect();
+            Data {
+                labels: label.clone(),
+                inputs,
+            }
+        })
+        .collect();
+
     Ok(DataSet::new(datas))
 }
 
@@ -257,6 +289,9 @@ mod tests {
 
     #[test]
     fn temp_test() -> Result<(), Box<dyn Error>> {
+        let dt = wdbc_dataset()?;
+        println!("{:?}", dt.get_datas()[0].inputs.len());
+
         /*
         let dt = flood_dataset()?.cross_valid_set(0.1);
         let training_set = &dt[0].0;

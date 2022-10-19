@@ -46,8 +46,10 @@ impl Loss {
         if outputs.len() != desired.len() {
             panic!("outputs size is not equal to desired size");
         }
-        let loss = outputs.iter().zip(desired.iter())
-            .fold(0.0, |ls, (o, d)| {ls + (self.func)(*o, *d)});
+        let loss = outputs
+            .iter()
+            .zip(desired.iter())
+            .fold(0.0, |ls, (o, d)| ls + (self.func)(*o, *d));
         self.outputs = outputs.clone();
         self.desired = desired.clone();
         loss

@@ -71,13 +71,13 @@ pub fn flood_fit(
 
         // get training set and validation set
         let training_set = if standardize {
-            data::standardization(&dt.0, dt.0.mean(), dt.0.std())
+            dt.0.standardization()
         } else {
             dt.0.clone()
         };
 
         let validation_set = if standardize {
-            data::standardization(&dt.1, dt.0.mean(), dt.0.std())
+            dt.1.standardization()
         } else {
             dt.1.clone()
         };
