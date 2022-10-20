@@ -2,6 +2,8 @@ use plotters::coord::Shift;
 use plotters::prelude::*;
 use std::error::Error;
 
+const FONT: &str = "Roboto Mono";
+
 pub struct LossGraph {
     loss: Vec<Vec<f64>>,
     valid_loss: Vec<Vec<f64>>,
@@ -180,7 +182,7 @@ pub fn draw_acc_2hist(
     root.fill(&WHITE)?;
 
     let mut chart = ChartBuilder::on(&root)
-        .caption(title, ("Hack", 44, FontStyle::Bold).into_font())
+        .caption(title, (FONT, 44, FontStyle::Bold).into_font())
         .margin(20)
         .x_label_area_size(70)
         .y_label_area_size(80)
@@ -193,9 +195,9 @@ pub fn draw_acc_2hist(
         .y_max_light_lines(0)
         .y_desc(axes_desc.1)
         .x_desc(axes_desc.0)
-        .axis_desc_style(("Hack", 30))
+        .axis_desc_style((FONT, 30))
         .y_labels(3)
-        .label_style(("Hack", 20))
+        .label_style((FONT, 20))
         .draw()?;
 
     let a = datas[0].iter().zip(0..).map(|(y, x)| {
@@ -234,7 +236,7 @@ pub fn draw_acc_2hist(
 
     chart
         .configure_series_labels()
-        .label_font(("Hack", 20).into_font())
+        .label_font((FONT, 20).into_font())
         .background_style(&WHITE)
         .border_style(&BLACK)
         .draw()?;
@@ -261,7 +263,7 @@ pub fn draw_confustion(matrix_vec: Vec<[[i32; 2]; 2]>, path: String) -> Result<(
         .disable_y_axis()
         .disable_y_mesh()
         .x_labels(3)
-        .label_style(("Hack", 30))
+        .label_style((FONT, 30))
         .draw()?;
 
     chart.draw_series((0..50).map(|x| {
@@ -283,7 +285,7 @@ pub fn draw_confustion(matrix_vec: Vec<[[i32; 2]; 2]>, path: String) -> Result<(
             let mut chart = ChartBuilder::on(&drawing_area)
                 .caption(
                     format!("Confusion Matrix {}", idx),
-                    ("Hack", 32, FontStyle::Bold).into_font(),
+                    (FONT, 32, FontStyle::Bold).into_font(),
                 )
                 .margin(20)
                 .build_cartesian_2d(0i32..2i32, 2i32..0i32)?
@@ -337,7 +339,7 @@ pub fn draw_confustion(matrix_vec: Vec<[[i32; 2]; 2]>, path: String) -> Result<(
                         Text::new(
                             text,
                             ((2.0 * x as f64 + 0.7) / 2.0, (2.0 * y as f64 + 1.0) / 2.0),
-                            "Hack".into_font().resize(30.0).color(&WHITE),
+                            FONT.into_font().resize(30.0).color(&WHITE),
                         )
                     }),
             )?;

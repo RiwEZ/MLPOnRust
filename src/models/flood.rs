@@ -1,10 +1,10 @@
 //! Contains training code for variations of flood dataset models.
-use super::activator;
-use super::loss;
-use super::model;
-use super::utills;
+use crate::activator;
+use crate::loss;
+use crate::mlp;
+use crate::utills;
 
-use model::{Layer, Net};
+use mlp::{Layer, Net};
 use std::error::Error;
 use std::fs;
 use std::io::Write;
@@ -20,7 +20,7 @@ pub fn flood_8_4_1(
     standardize: bool,
 ) -> Result<(), Box<dyn Error>> {
     fn model() -> Net {
-        let mut layers: Vec<model::Layer> = vec![];
+        let mut layers: Vec<mlp::Layer> = vec![];
         layers.push(Layer::new(8, 4, 1.0, activator::sigmoid()));
         layers.push(Layer::new(4, 1, 1.0, activator::linear()));
         Net::from_layers(layers)
@@ -32,7 +32,7 @@ pub fn flood_8_4_1(
 
 pub fn flood_8_8_1(lr: f64, momentum: f64, folder: &str) -> Result<(), Box<dyn Error>> {
     fn model() -> Net {
-        let mut layers: Vec<model::Layer> = vec![];
+        let mut layers: Vec<mlp::Layer> = vec![];
         layers.push(Layer::new(8, 8, 1.0, activator::sigmoid()));
         layers.push(Layer::new(8, 1, 1.0, activator::linear()));
         Net::from_layers(layers)

@@ -1,5 +1,5 @@
 use crate::activator;
-use crate::model;
+use crate::mlp;
 use serde_json::{json, to_writer_pretty, Value};
 use std::error::Error;
 use std::fs::create_dir;
@@ -8,7 +8,7 @@ use std::io::Read;
 use std::io::{self, BufRead};
 use std::path::Path;
 
-pub fn save(layers: &Vec<model::Layer>, path: String) -> Result<(), Box<dyn Error>> {
+pub fn save(layers: &Vec<mlp::Layer>, path: String) -> Result<(), Box<dyn Error>> {
     let mut json: Vec<Value> = vec![];
 
     for l in layers {
@@ -44,18 +44,18 @@ where
     Ok(contents)
 }
 
-pub fn load<P>(filename: P) -> Result<model::Net, Box<dyn Error>>
+pub fn load<P>(filename: P) -> Result<mlp::Net, Box<dyn Error>>
 where
     P: AsRef<Path>,
 {
     let contents = read_file(filename)?;
 
     let json: Value = serde_json::from_str(&contents)?;
-    let mut layers: Vec<model::Layer> = vec![];
+    let mut layers: Vec<mlp::Layer> = vec![];
 
     for l in json.as_array().unwrap() {
         // default layer activation is simeple linear f(x) = x
-        let mut layer = model::Layer::new(
+        let mut layer = mlp::Layer::new(
             l["inputs"].as_u64().unwrap(),
             l["outputs"].as_u64().unwrap(),
             0.0,
@@ -80,7 +80,7 @@ where
         layers.push(layer);
     }
 
-    Ok(model::Net::from_layers(layers))
+    Ok(mlp::Net::from_layers(layers))
 }
 
 /// Check if specify folder exists in models and img folder, if not create it

@@ -1,9 +1,14 @@
 //! Genictic Algorithm Utility
 pub mod selection;
-use rand::{distributions::Uniform, prelude::Distribution, seq::SliceRandom, Rng};
+use rand::{
+    distributions::Uniform,
+    prelude::Distribution,
+    seq::{index::sample, SliceRandom},
+    Rng,
+};
 use std::f64::consts::E;
 
-use crate::model::Net;
+use crate::mlp::Net;
 
 #[derive(Clone)]
 pub struct Individual {
@@ -45,19 +50,22 @@ pub fn mating(pop: &Vec<Individual>) -> Vec<Individual> {
 
 /// strong mutation
 pub fn mutate(pop: &Vec<Individual>, amount: usize, p_m: f64) -> Vec<Individual> {
-    let mut new_pop: Vec<Individual> = vec![];
     let mut rand = rand::thread_rng();
-    for i in 0..amount {
-        let mut ind_clone = pop[i].clone();
-        for j in 0..pop[i].chromosome.len() {
-            let between = Uniform::from(0.0..=1.0);
-            if between.sample(&mut rand) < p_m {
-                let change = 2f64 * rand::random::<f64>() - 1f64;
-                ind_clone.chromosome[j] += change;
+    let new_pop: Vec<Individual> = pop
+        .choose_multiple(&mut rand::thread_rng(), amount)
+        .into_iter()
+        .map(|ind| {
+            let mut ind_clone = ind.clone();
+            for gene in ind_clone.chromosome.iter_mut() {
+                let between = Uniform::from(0.0..=1.0);
+                if between.sample(&mut rand) < p_m {
+                    let change = 2f64 * rand::random::<f64>() - 1f64;
+                    *gene += change;
+                }
             }
-        }
-        new_pop.push(ind_clone);
-    }
+            ind_clone
+        })
+        .collect();
     new_pop
 }
 
@@ -135,12 +143,12 @@ mod tests {
     use super::*;
     use crate::{
         activator,
-        model::{self, Layer},
+        mlp::{self, Layer},
     };
 
     #[test]
     fn test_init_pop() {
-        let mut layers: Vec<model::Layer> = vec![];
+        let mut layers: Vec<mlp::Layer> = vec![];
         layers.push(Layer::new(4, 2, 1.0, activator::sigmoid()));
         layers.push(Layer::new(2, 1, 1.0, activator::sigmoid()));
         let net = Net::from_layers(layers);
@@ -156,7 +164,7 @@ mod tests {
 
     #[test]
     fn test_assign_ind() {
-        let mut layers: Vec<model::Layer> = vec![];
+        let mut layers: Vec<mlp::Layer> = vec![];
         layers.push(Layer::new(3, 1, 1.0, activator::sigmoid()));
         layers.push(Layer::new(1, 1, 1.0, activator::sigmoid()));
         let mut net = Net::from_layers(layers);

@@ -2,7 +2,7 @@ use rand::seq::SliceRandom;
 
 use super::Individual;
 
-/// deterministic tournament
+/// binary deterministic tournament with reinsertion
 pub fn d_tornament(pop: &Vec<Individual>) -> Vec<Individual> {
     let mut results: Vec<Individual> = vec![];
     for _ in 0..pop.len() {

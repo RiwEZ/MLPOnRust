@@ -1,10 +1,10 @@
 //! Contains training code for variations of cross.pat dataset models.
-use super::activator;
-use super::loss;
-use super::model;
-use super::utills;
+use crate::activator;
+use crate::loss;
+use crate::mlp;
+use crate::utills;
 
-use model::{Layer, Net};
+use mlp::{Layer, Net};
 use std::error::Error;
 use std::fs;
 use std::io::Write;
@@ -15,7 +15,7 @@ use utills::io;
 
 pub fn cross_2_4_1(lr: f64, momentum: f64, folder: &str) -> Result<(), Box<dyn Error>> {
     fn model() -> Net {
-        let mut layers: Vec<model::Layer> = vec![];
+        let mut layers: Vec<mlp::Layer> = vec![];
         layers.push(Layer::new(2, 4, 1.0, activator::sigmoid()));
         layers.push(Layer::new(4, 1, 1.0, activator::sigmoid()));
         Net::from_layers(layers)
@@ -27,7 +27,7 @@ pub fn cross_2_4_1(lr: f64, momentum: f64, folder: &str) -> Result<(), Box<dyn E
 
 pub fn cross_2_8_1(lr: f64, momentum: f64, folder: &str) -> Result<(), Box<dyn Error>> {
     fn model() -> Net {
-        let mut layers: Vec<model::Layer> = vec![];
+        let mut layers: Vec<mlp::Layer> = vec![];
         layers.push(Layer::new(2, 8, 1.0, activator::sigmoid()));
         layers.push(Layer::new(8, 1, 1.0, activator::sigmoid()));
         Net::from_layers(layers)

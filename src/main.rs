@@ -1,17 +1,15 @@
 pub mod activator;
-pub mod cross;
-pub mod flood;
 pub mod ga;
 pub mod loss;
-pub mod model;
+pub mod mlp;
+pub mod models;
 pub mod utills;
-pub mod wdbc;
 
 use std::error::Error;
 use utills::data::un_standardization;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    wdbc::wdbc_30_15_1();
+    models::wdbc::wdbc_30_15_1();
 
     /*
     // training code

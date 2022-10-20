@@ -1,4 +1,4 @@
-use crate::model;
+use crate::mlp;
 
 pub struct Loss {
     outputs: Vec<f64>,
@@ -55,7 +55,7 @@ impl Loss {
         loss
     }
 
-    pub fn backward(&self, layers: &mut Vec<model::Layer>) {
+    pub fn backward(&self, layers: &mut Vec<mlp::Layer>) {
         for l in (0..layers.len()).rev() {
             // output layer
             if l == layers.len() - 1 {

@@ -4,7 +4,7 @@ use crate::{
     activator,
     ga::{self, Individual},
     loss,
-    model::{self, Layer, Net},
+    mlp::{self, Layer, Net},
     utills::{
         data::{self, confusion_count},
         graph, io,
@@ -13,7 +13,7 @@ use crate::{
 
 pub fn wdbc_30_15_1() {
     fn model() -> Net {
-        let mut layers: Vec<model::Layer> = vec![];
+        let mut layers: Vec<mlp::Layer> = vec![];
         layers.push(Layer::new(30, 15, 1.0, activator::sigmoid()));
         layers.push(Layer::new(15, 1, 1.0, activator::sigmoid()));
         Net::from_layers(layers)
@@ -32,8 +32,7 @@ pub fn wdbc_ga(model: &dyn Fn() -> Net, folder: &str) -> Result<(), Box<dyn Erro
     let start = Instant::now();
     for (j, dt) in dataset.cross_valid_set(0.1).iter().enumerate() {
         let mut net = model();
-        let training_set = &dt.0;
-        let validation_set = &dt.1;
+        let (training_set, validation_set) = dt.0.minmax_norm(&dt.1);
         let max_gen = 200;
         let mut loss = loss::Loss::square_err();
 

@@ -123,6 +123,62 @@ impl DataSet {
         DataSet::new(datas)
     }
 
+    /// this could be implement to be cleaner but I'm lazy
+    pub fn minmax_norm(&self, valid_set: &DataSet) -> (DataSet, DataSet) {
+        // this is very not efficient
+        let size = self.datas[0].inputs.len();
+        let mut features: Vec<Vec<f64>> = Vec::with_capacity(size);
+        let mut v_features: Vec<Vec<f64>> = Vec::with_capacity(size);
+
+        for _ in 0..size {
+            features.push(vec![]);
+            v_features.push(vec![]);
+        }
+        for dt in self.datas.iter() {
+            for (f, x) in features.iter_mut().zip(dt.inputs.iter()) {
+                f.push(*x);
+            }
+        }
+        for v_dt in valid_set.datas.iter() {
+            for (vf, vx) in v_features.iter_mut().zip(v_dt.inputs.iter()) {
+                vf.push(*vx);
+            }
+        }
+        for (f, vf) in features.iter_mut().zip(v_features.iter_mut()) {
+            let (min, max) = (min(f), max(f));
+            *f = minmax_norm(f, min, max);
+            *vf = minmax_norm(vf, min, max);
+        }
+
+        let datas: Vec<Data> = self
+            .datas
+            .iter()
+            .enumerate()
+            .map(|(i, dt)| {
+                let inputs: Vec<f64> = features.iter().map(|x| x[i]).collect();
+                Data {
+                    labels: dt.labels.clone(),
+                    inputs,
+                }
+            })
+            .collect();
+
+        let v_datas: Vec<Data> = valid_set
+            .datas
+            .iter()
+            .enumerate()
+            .map(|(i, dt)| {
+                let inputs: Vec<f64> = v_features.iter().map(|x| x[i]).collect();
+                Data {
+                    labels: dt.labels.clone(),
+                    inputs,
+                }
+            })
+            .collect();
+
+        (DataSet::new(datas), DataSet::new(v_datas))
+    }
+
     pub fn get_datas(&self) -> Vec<Data> {
         self.datas.clone()
     }
@@ -237,49 +293,23 @@ pub fn cross_dataset() -> Result<DataSet, Box<dyn Error>> {
 }
 
 pub fn wdbc_dataset() -> Result<DataSet, Box<dyn Error>> {
-    let mut labels: Vec<Vec<f64>> = vec![];
-    let mut features: Vec<Vec<f64>> = Vec::with_capacity(30);
+    let mut datas: Vec<Data> = vec![];
     let mut lines = read_lines("data/wdbc.txt")?;
-    for _ in 0..30 {
-        features.push(vec![]);
-    }
     while let Some(Ok(line)) = lines.next() {
+        let mut inputs: Vec<f64> = vec![];
+        let mut labels: Vec<f64> = vec![]; // M (malignant) = 1.0, B (benign) = 0.0
         let arr: Vec<&str> = line.split(",").collect();
-        // M (malignant) = 1.0, B (benign) = 0.0
         if arr[1] == "M" {
-            labels.push(vec![0.0]);
+            labels.push(0.0);
         } else if arr[1] == "B" {
-            labels.push(vec![1.0]);
+            labels.push(1.0);
         }
-        let mut i = 0;
         for w in &arr[2..] {
             let v: f64 = w.parse()?;
-            features[i].push(v);
-            i += 1
+            inputs.push(v);
         }
+        datas.push(Data { inputs, labels });
     }
-
-    // standardization each column
-    for data in features.iter_mut() {
-        let mean = mean(&data);
-        let std = std(&data, mean);
-        let max = max(&data);
-        let min = min(&data);
-        *data = minmax_norm(&data, min, max);
-    }
-
-    let datas: Vec<Data> = labels
-        .iter()
-        .zip(0..)
-        .map(|(label, i)| {
-            let inputs: Vec<f64> = features.iter().map(|x| x[i]).collect();
-            Data {
-                labels: label.clone(),
-                inputs,
-            }
-        })
-        .collect();
-
     Ok(DataSet::new(datas))
 }
 
