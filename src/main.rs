@@ -6,10 +6,11 @@ pub mod models;
 pub mod utills;
 
 use std::error::Error;
-use utills::data::un_standardization;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    models::wdbc::wdbc_30_15_1();
+    //models::wdbc::wdbc_30_15_1();
+    //models::wdbc::wdbc_30_7_1();
+    models::wdbc::wdbc_30_15_7_1();
 
     /*
     // training code

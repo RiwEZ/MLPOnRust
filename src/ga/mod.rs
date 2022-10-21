@@ -1,11 +1,6 @@
 //! Genictic Algorithm Utility
 pub mod selection;
-use rand::{
-    distributions::Uniform,
-    prelude::Distribution,
-    seq::{index::sample, SliceRandom},
-    Rng,
-};
+use rand::{distributions::Uniform, prelude::Distribution, seq::SliceRandom, Rng};
 use std::f64::consts::E;
 
 use crate::mlp::Net;

@@ -3,6 +3,9 @@ use plotters::prelude::*;
 use std::error::Error;
 
 const FONT: &str = "Roboto Mono";
+const CAPTION: i32 = 70;
+const SERIE_LABEL: i32 = 32;
+const AXIS_LABEL: i32 = 40;
 
 pub struct LossGraph {
     loss: Vec<Vec<f64>>,
@@ -182,10 +185,10 @@ pub fn draw_acc_2hist(
     root.fill(&WHITE)?;
 
     let mut chart = ChartBuilder::on(&root)
-        .caption(title, (FONT, 44, FontStyle::Bold).into_font())
+        .caption(title, (FONT, CAPTION, FontStyle::Bold).into_font())
         .margin(20)
         .x_label_area_size(70)
-        .y_label_area_size(80)
+        .y_label_area_size(90)
         .build_cartesian_2d((1..n as u32).into_segmented(), 0.0..1.0)?
         .set_secondary_coord(0.0..n, 0.0..1.0);
 
@@ -195,9 +198,9 @@ pub fn draw_acc_2hist(
         .y_max_light_lines(0)
         .y_desc(axes_desc.1)
         .x_desc(axes_desc.0)
-        .axis_desc_style((FONT, 30))
+        .axis_desc_style((FONT, AXIS_LABEL))
         .y_labels(3)
-        .label_style((FONT, 20))
+        .label_style((FONT, AXIS_LABEL - 10))
         .draw()?;
 
     let a = datas[0].iter().zip(0..).map(|(y, x)| {
@@ -236,7 +239,7 @@ pub fn draw_acc_2hist(
 
     chart
         .configure_series_labels()
-        .label_font((FONT, 20).into_font())
+        .label_font((FONT, SERIE_LABEL).into_font())
         .background_style(&WHITE)
         .border_style(&BLACK)
         .draw()?;
@@ -256,14 +259,14 @@ pub fn draw_confustion(matrix_vec: Vec<[[i32; 2]; 2]>, path: String) -> Result<(
         .margin(20)
         .margin_left(40)
         .margin_right(40)
-        .x_label_area_size(20)
+        .x_label_area_size(40)
         .build_cartesian_2d(0i32..50i32, 0i32..1i32)?;
     chart
         .configure_mesh()
         .disable_y_axis()
         .disable_y_mesh()
         .x_labels(3)
-        .label_style((FONT, 30))
+        .label_style((FONT, 40))
         .draw()?;
 
     chart.draw_series((0..50).map(|x| {
@@ -284,8 +287,8 @@ pub fn draw_confustion(matrix_vec: Vec<[[i32; 2]; 2]>, path: String) -> Result<(
         if let Some(matrix) = matrix_iter.next() {
             let mut chart = ChartBuilder::on(&drawing_area)
                 .caption(
-                    format!("Confusion Matrix {}", idx),
-                    (FONT, 32, FontStyle::Bold).into_font(),
+                    format!("Iteration {}", idx),
+                    (FONT, 40, FontStyle::Bold).into_font(),
                 )
                 .margin(20)
                 .build_cartesian_2d(0i32..2i32, 2i32..0i32)?
@@ -344,6 +347,45 @@ pub fn draw_confustion(matrix_vec: Vec<[[i32; 2]; 2]>, path: String) -> Result<(
                     }),
             )?;
         }
+    }
+    root.present()?;
+    Ok(())
+}
+
+/// Receive each cross-validation vector of each individual fitness value.
+pub fn draw_ga_progress(
+    cv_fitness: &Vec<Vec<(i32, f64)>>,
+    path: String,
+) -> Result<(), Box<dyn Error>> {
+    let root = BitMapBackend::new(&path, (2000, 1000)).into_drawing_area();
+    root.fill(&WHITE)?;
+
+    // This is mostly hardcoded
+    let drawing_areas = root.split_evenly((2, 5));
+    for ((drawing_area, idx), fitness) in drawing_areas.iter().zip(1..).zip(cv_fitness.iter()) {
+        let mut chart = ChartBuilder::on(&drawing_area)
+            .caption(
+                format!("Iteration {}", idx),
+                (FONT, 40, FontStyle::Bold).into_font(),
+            )
+            .margin(40)
+            .x_label_area_size(20)
+            .y_label_area_size(20)
+            .build_cartesian_2d(0i32..200i32, 0.0..1.1)?;
+
+        chart
+            .configure_mesh()
+            .x_labels(3)
+            .y_labels(2)   
+            .label_style((FONT, 30))
+            .max_light_lines(4)
+            .draw()?;
+
+        chart.draw_series(
+            fitness
+                .iter()
+                .map(|x| Circle::new((x.0, x.1), 1, BLUE.mix(0.5).filled())),
+        )?;
     }
     root.present()?;
     Ok(())

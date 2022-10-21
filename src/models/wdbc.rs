@@ -11,6 +11,8 @@ use crate::{
     },
 };
 
+const IMGPATH: &str = "report/assignment_3/images";
+
 pub fn wdbc_30_15_1() {
     fn model() -> Net {
         let mut layers: Vec<mlp::Layer> = vec![];
@@ -18,22 +20,48 @@ pub fn wdbc_30_15_1() {
         layers.push(Layer::new(15, 1, 1.0, activator::sigmoid()));
         Net::from_layers(layers)
     }
-    wdbc_ga(&model, "wdbc-30-15-1").unwrap();
+    wdbc_ga(&model, "wdbc-30-15-1", IMGPATH).unwrap();
+}
+
+pub fn wdbc_30_7_1() {
+    fn model() -> Net {
+        let mut layers: Vec<mlp::Layer> = vec![];
+        layers.push(Layer::new(30, 7, 1.0, activator::sigmoid()));
+        layers.push(Layer::new(7, 1, 1.0, activator::sigmoid()));
+        Net::from_layers(layers)
+    }
+    wdbc_ga(&model, "wdbc-30-7-1", IMGPATH).unwrap();
+}
+
+pub fn wdbc_30_15_7_1() {
+    fn model() -> Net {
+        let mut layers: Vec<mlp::Layer> = vec![];
+        layers.push(Layer::new(30, 15, 1.0, activator::sigmoid()));
+        layers.push(Layer::new(15, 7, 1.0, activator::sigmoid()));
+        layers.push(Layer::new(7, 1, 1.0, activator::sigmoid()));
+        Net::from_layers(layers)
+    }
+    wdbc_ga(&model, "wdbc-30-15-7-1", IMGPATH).unwrap();
 }
 
 /// train mlp with genitic algorithm
-pub fn wdbc_ga(model: &dyn Fn() -> Net, folder: &str) -> Result<(), Box<dyn Error>> {
+pub fn wdbc_ga(model: &dyn Fn() -> Net, folder: &str, imgpath: &str) -> Result<(), Box<dyn Error>> {
     let dataset = data::wdbc_dataset()?;
     let mut valid_acc: Vec<f64> = vec![];
     let mut train_acc: Vec<f64> = vec![];
+    let mut train_proc: Vec<Vec<(i32, f64)>> = Vec::with_capacity(10);
+    for _ in 0..10 {
+        train_proc.push(vec![]);
+    }
+
     let mut matrix_vec: Vec<[[i32; 2]; 2]> = vec![];
     let threshold = 0.5;
+    let max_gen = 200;
 
     let start = Instant::now();
     for (j, dt) in dataset.cross_valid_set(0.1).iter().enumerate() {
         let mut net = model();
         let (training_set, validation_set) = dt.0.minmax_norm(&dt.1);
-        let max_gen = 200;
         let mut loss = loss::Loss::square_err();
 
         // training with GA
@@ -56,6 +84,8 @@ pub fn wdbc_ga(model: &dyn Fn() -> Net, folder: &str) -> Result<(), Box<dyn Erro
                 let fitness = ((matrix[0][0] + matrix[1][1]) as f64 / training_set.len() as f64)
                     + 0.001 / (run_loss / training_set.len() as f64);
                 p.set_fitness(fitness);
+                train_proc[j].push((k, fitness)); // track training progress
+
                 if fitness > max_fitness {
                     max_fitness = fitness;
                     local_best_ind = p.clone();
@@ -98,17 +128,22 @@ pub fn wdbc_ga(model: &dyn Fn() -> Net, folder: &str) -> Result<(), Box<dyn Erro
             confusion_count(&mut matrix_t, &result, &data.labels, threshold);
         }
         train_acc.push((matrix_t[0][0] + matrix_t[1][1]) as f64 / training_set.len() as f64);
-        io::save(&net.layers, format!("models/{}/{}.json", folder, j))?;
+        //io::save(&net.layers, format!("models/{}/{}.json", folder, j))?;
     }
     let duration = start.elapsed();
-    println!("Time used: {} sec", duration.as_secs());
+    println!("Time used: {:.3} sec", duration.as_secs_f32());
 
     graph::draw_acc_2hist(
         [&valid_acc, &train_acc],
         "Training & Validation Accuray",
         ("Iterations", "Accuracy"),
-        "img/ga_validacc.png".into(),
+        format!("{}/{}/accuracy.png", imgpath, folder),
     )?;
-    graph::draw_confustion(matrix_vec, "img/confusion_matrix.png".into())?;
+    graph::draw_confustion(matrix_vec, format!("{}/{}/conf_mat.png", imgpath, folder))?;
+    graph::draw_ga_progress(
+        &train_proc,
+        format!("{}/{}/train_proc.png", imgpath, folder),
+    )?;
+
     Ok(())
 }
