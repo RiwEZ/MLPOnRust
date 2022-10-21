@@ -8,9 +8,9 @@
 \usepackage{booktabs, siunitx}
 \usepackage{geometry}
 \usepackage{minted}
-\usepackage{subfiles}
 \usepackage{indentfirst}
-\usepackage[backend=biber]{biblatex}
+\usepackage{caption}
+\usepackage[backend=biber, style=alphabetic]{biblatex}
 \usepackage[svgnames,table]{xcolor}
 
 \addbibresource{ref.bib}
@@ -31,6 +31,203 @@ Assignment 3 Report
 
 \begin{document}
 \maketitle
+This report is about the result of my implementation of Genetic Algorithm (GA) for optimizing MLP on 
+Rust language for 261456 - INTRO COMP INTEL FOR CPE class
+assignment.
+If you are interested to know how I implement GA and use it to optimize the MLP
+, you can see the source code on my 
 \href{https://github.com/RiwEZ/MLPOnRust}{Github repository} or in this document appendix.
+
+\section*{Problem}
+We want to train multilayer perceptron (MLP) for predicting breast cancer by using Genetic Algorithm (GA). The dataset we are using 
+is \href{https://archive.ics.uci.edu/ml/datasets/Breast+Cancer+Wisconsin+%28Diagnostic%29}{Wisconsin Diagnostic Breast Cancer (WDBC)} 
+from UCI Machine learning Repository. This dataset has 30 features that we will use for training MLP to classify if the result is 
+benign or malignant. The class distribution are 357 benign and 212 malignant which is unbalance. 
+
+We will use only 1 output node for all models because we are traning a binary classification model so we can just map
+malignant (M) $\rightarrow$ 1 and benign (B) $\rightarrow$ 0. We then have a threshold at 0.5 if output node signal is more than 0.5 then
+the model predict malignant (positive) else it predict benign (negative). 
+Accuracy is then calculated by using this equation $\frac{TP+TN}{TP+TN+FN+FP}$ where $TP, TN, FN, FP$ come from confusion matrix. 
+The experiment to see how effictive GA is in training MLP will be demonstrated on \nameref{trainres}. 
+
+
+\section*{Our Genetic Algorithm}
+\subsection*{Initial Population}\label{init}
+An individual is represented by a list of weights and biases of MLP. 
+We use weights and bias of top node to bottom node of each layer to create one individual, 
+for an example: from 3-2-1 network in \cref*{fig:1} an individual is represented by (w1, w2, w3, b1, w4, w5, w6, b2, w7, w8, b3).
+
+We set the numbers of individual in a population to 25 and for each individual the weights are random number in range [-1.0, 1.0], 
+and bias of each node is set to 1.0.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[scale = 0.25]{nn_example.jpg}
+    \caption{The 3-2-1 network.}
+    \label{fig:1}
+\end{figure}
+\subsection*{Fitness Function}\label{fitness}
+We use both accuracy and mean squared error as the fitness value following the equation \cref*{eq:1} where $i$ is the individual
+and $\text{accuracy}_i$, $\text{MSE}_i$ are that individual accuracy and MSE from running through the full training set. 
+\begin{equation}\label{eq:1}
+f(i) = \text{accuracy}_i + \frac{0.001}{\text{MSE}}_i
+\end{equation}
+\subsection*{Selection}\label{select}
+We use the binary deterministic tournament with reinsertion (implementation on \ref{src:select}) 
+as the selection method to select and clone 25 individual to mating pool. 
+
+\subsection*{Crossover}\label{mating}
+We random 2 parent from mating pool to be dad and mom, them perforrm a crossover by doing a modified 
+uniform crossover with $p_{at\_i} = 0.5$ (\cite{sansanee} page 113) that only produce 1 child with each position on chrosome 
+has an equal chance to be from dad or mom (implementation on \ref{src:ga}). We will perform crossover untill we have 25 children for
+$P^2$.
+
+\subsection*{Mutation}\label{mutate}
+We use strong mutation (\cite{sansanee} page 114) with $p_m = 0.02$ on randomly selected 20 individuals from $P^2$ 
+(implementation on \ref{src:ga}).
+
+\subsection*{Full Process}\
+Using 10\% cross-validation, and only preprocess each iteration training and validation set with min-max normalization 
+to avoid data leakage as state on \cite{dataleak}. The min-max normalization process is done by for each feature $F$ on training set
+we find $max(F)$ and $min(F)$ then for each datapoint $F_x$ we compute new datapoint on both training set and 
+validation set $F_x' = \frac{F_x - min(F)}{max(F) - min(F)}$, this will guarantee that we applied the min-max normalization using $min$
+and $max$ from training set on both training set and validation set. Next, for each cross-validation iteration we follow these steps
+(implementation on \ref{src:wdbc}):
+\begin{enumerate}
+    \item Initialize the population as state on \nameref{init}
+    \item For each individual on population we evaluate its fitness as state on \nameref{fitness} and mark the individual that 
+    has the largest fitness.
+    \item We then process through \nameref{select}, \nameref{mating}, and \nameref{mutate} to get 20 individuals.
+    \item For the remaining 5 individual needed, we use clones of the individual that has largest fitness from step 2 to add to the
+    population.
+    \item Repeat step 2-4 untill we fully run through 200 generations and store the individual that has the largest fitness over all 
+    generations.
+    \item Use that individual from step 5 to test on training and validation set.
+\end{enumerate}
+
+\section*{Training Result}\label{trainres}
+We will experiment with 3 models which are wdbc-30-15-1, wdbc-30-7-1, and wdbc-30-15-7-1 to see if their training result will have 
+any significant differences in training time and accuracy (implementation on \ref{src:wdbc} 
+and we use rust compiler with release profile to build and run all trainings). 
+
+\begin{itemize}
+    \item {\textbf{wdbc-30-15-1} : The base model that contains 30 input nodes, 1 hidden layer with 15 nodes, 
+        and 1 output node with all nodes using sigmoid as an activation function. 
+        We assume that this model will have accuracy $ > 95\%$ with reasonable training time used.
+        The result is shown on \cref{fig:2}.
+    }
+    \item{\textbf{wdbc-30-7-1} : A smaller model with 30 input nodes, 1 hidden layer with 7 nodes, and 1 output node. 
+        We assume that this model will have faster training time but with less accuracy than the wdbc-30-15-1. The result is shown on \cref{fig:3}
+    }
+    \item{\textbf{wdbc-30-15-7-1} : A larger model with 30 input nodes, 2 hidden layers with 15 and 7 nodes, and 1 output node.
+        We assume that this model will have accuracy $ > 98\%$ with longer training used than the wdbc-30-15-1. The result is shown on \cref{fig:4}
+    }
+\end{itemize}
+
+\begin{figure}[ht]
+    \begin{subfigure}{\textwidth}  
+        \centering
+        \includegraphics[width=0.89\textwidth]{wdbc-30-15-1/train_proc}
+        \caption{The training process of each cross-valiation iteration: x-axis is the generation, y-axis is the fitness value, and each blue dot is an individual in x generation with y fitness.}
+        \label{fig:2a}
+    \end{subfigure}
+    \begin{subfigure}{\textwidth}  
+        \centering
+        \includegraphics[scale=0.25]{wdbc-30-15-1/accuracy}
+        \caption{The best individual from each cross-validation iteration accuracy on training set (blue) and validation set (red).}
+        \label{fig:2b}
+    \end{subfigure}
+    \begin{subfigure}{\textwidth}   
+        \centering
+        \includegraphics[width=0.89\textwidth]{wdbc-30-15-1/conf_mat}
+        \caption{The best individual from each cross-valiation iteration confusion matrix on validation set.}
+        \label{fig:2c}
+    \end{subfigure}
+    \caption{Training result of wdbc-30-15-1 with 20.609 seconds used for training.}
+    \label{fig:2}
+\end{figure}
+\FloatBarrier
+
+\begin{figure}[ht]
+    \begin{subfigure}{\textwidth}  
+        \centering
+        \includegraphics[width=0.89\textwidth]{wdbc-30-7-1/train_proc}
+        \caption{The training process of each cross-valiation iteration: x-axis is the generation, y-axis is the fitness value, and each blue dot is an individual in x generation with y fitness.}
+        \label{fig:3a}
+    \end{subfigure}
+    \begin{subfigure}{\textwidth}  
+        \centering
+        \includegraphics[scale=0.25]{wdbc-30-7-1/accuracy}
+        \caption{The best individual from each cross-validation iteration accuracy on training set (blue) and validation set (red).}
+        \label{fig:3b}
+    \end{subfigure}
+    \begin{subfigure}{\textwidth}   
+        \centering
+        \includegraphics[width=0.89\textwidth]{wdbc-30-7-1/conf_mat}
+        \caption{The best individual from each cross-valiation iteration confusion matrix on validation set.}
+        \label{fig:3c}
+    \end{subfigure}
+    \caption{Training result of wdbc-30-7-1 with 14.163 seconds used for training.}
+    \label{fig:3}
+\end{figure}
+\FloatBarrier
+
+\begin{figure}[ht]
+    \begin{subfigure}{\textwidth}  
+        \centering
+        \includegraphics[width=0.89\textwidth]{wdbc-30-15-7-1/train_proc}
+        \caption{The training process of each cross-valiation iteration: x-axis is the generation, y-axis is the fitness value, and each blue dot is an individual in x generation with y fitness.}
+        \label{fig:4a}
+    \end{subfigure}
+    \begin{subfigure}{\textwidth}  
+        \centering
+        \includegraphics[scale=0.25]{wdbc-30-15-7-1/accuracy}
+        \caption{The best individual from each cross-validation iteration accuracy on training set (blue) and validation set (red).}
+        \label{fig:4b}
+    \end{subfigure}
+    \begin{subfigure}{\textwidth}   
+        \centering
+        \includegraphics[width=0.89\textwidth]{wdbc-30-15-7-1/conf_mat}
+        \caption{The best individual from each cross-valiation iteration confusion matrix on validation set.}
+        \label{fig:4c}
+    \end{subfigure}
+    \caption{Training result of wdbc-30-15-7-1 with 24.244 seconds used for training.}
+    \label{fig:4}
+\end{figure}
+\FloatBarrier
+
+\section*{Analysis}
+From \cref{table:1}, we can we that there are no significant accuracy differences in every model which is not matching with our assumption. 
+The reason may be that the wdbc dataset is not complex enough for the model that is larger than wdbc-30-7-1. However, the training
+time used for every model matches our assumption that wdbc-30-7-1 use the least time and wdbc-30-15-7-1 uses the most time. 
+Next, we can see the convergence speed of each model on \cref{fig:2a}, \cref{fig:3a}, and \cref{fig:4a} which for all model the 
+best individual seems to reach fitness value near 1.0 in less than 100 generations. Also, the fitness value around 1.0 seems to be 
+the barrier for every model which the reason should be because of our fitness function that uses both accuracy and MSE to help with 
+the overfitting problem when looking only at MSE (backpropagation method).
+
+\begin{table}[htp]
+	\centering
+	\begin{tabular}{l S[table-format=2.3] S[table-format=2.1]}
+		\toprule
+        \multicolumn{1}{c}{Model} & {Training Time (seconds)} & {Validation Set Mean Accuracy (\%)} \\
+        \midrule
+        wdbc-30-15-1 & 20.609 & 97.0 \\
+        wdbc-30-7-1 & 14.163 & 96.5 \\
+        wdbc-30-15-7-1 & 24.244 & 97.0 \\
+        \bottomrule
+    \end{tabular} 
+	\caption{Training time and validation set mean accuracy (red line on 
+		\cref{fig:2b}, \cref{fig:3b}, and \cref{fig:4b}) of each model.}
+	\label{table:1}
+\end{table}
+
+\section*{Summary}
+Genetic Algorithm (GA) is an okay algorithm to use for training MLP if we know how we should design a fitness function and how to 
+implement GA with efficiency. GA can train MLP to create a model that is usable as we demonstrated on \nameref{trainres}. 
+Rust language is also a great tool for implementing GA because of how fast it is and how easy it is to write a memory-safe program.
+
+\printbibliography
+
+\include{appendix.tex}
 
 \end{document}
