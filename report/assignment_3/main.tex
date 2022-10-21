@@ -99,7 +99,7 @@ and $max$ from training set on both training set and validation set. Next, for e
     has the largest fitness.
     \item We then process through \nameref{select}, \nameref{mating}, and \nameref{mutate} to get 20 individuals.
     \item For the remaining 5 individual needed, we use clones of the individual that has largest fitness from step 2 to add to the
-    population.
+    population (elitism \cite{sansanee} on page 107).
     \item Repeat step 2-4 untill we fully run through 200 generations and store the individual that has the largest fitness over all 
     generations.
     \item Use that individual from step 5 to test on training and validation set.
