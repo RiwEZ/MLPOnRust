@@ -376,7 +376,7 @@ pub fn draw_ga_progress(
         chart
             .configure_mesh()
             .x_labels(3)
-            .y_labels(2)   
+            .y_labels(2)
             .label_style((FONT, 30))
             .max_light_lines(4)
             .draw()?;

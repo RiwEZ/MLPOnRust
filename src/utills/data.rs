@@ -1,4 +1,5 @@
 use super::io::read_lines;
+use chrono::{Date, DateTime, Duration, TimeZone, Utc};
 use rand::prelude::SliceRandom;
 use serde::Deserialize;
 use std::error::Error;
@@ -311,6 +312,126 @@ pub fn wdbc_dataset() -> Result<DataSet, Box<dyn Error>> {
         datas.push(Data { inputs, labels });
     }
     Ok(DataSet::new(datas))
+}
+
+pub fn airquality_dataset() -> Result<(DataSet, DataSet), Box<dyn Error>> {
+    // nx is not used
+    #[derive(Deserialize, Debug)]
+    struct Record {
+        #[serde(rename = "Date")]
+        date: String,
+        #[serde(rename = "Time")]
+        time: String,
+        #[serde(rename = "PT08.S1(CO)")]
+        pt_s1: i32,
+        #[serde(rename = "C6H6(GT)")]
+        benzene: f64,
+        #[serde(rename = "PT08.S2(NMHC)")]
+        pt_s2: i32,
+        #[serde(rename = "PT08.S3(NOx)")]
+        pt_s3: i32,
+        #[serde(rename = "PT08.S4(NO2)")]
+        pt_s4: i32,
+        #[serde(rename = "PT08.S5(O3)")]
+        pt_s5: i32,
+        #[serde(rename = "T")]
+        temp: f64,
+        #[serde(rename = "RH")]
+        rh: f64,
+        #[serde(rename = "AH")]
+        ah: f64,
+    }
+    #[derive(Debug)]
+    struct RecData {
+        datetime: DateTime<Utc>,
+        input: Vec<f64>,
+        output: Vec<f64>,
+    }
+
+    impl RecData {
+        pub fn new(datetime: DateTime<Utc>) -> RecData {
+            RecData {
+                datetime,
+                input: vec![],
+                output: vec![],
+            }
+        }
+        pub fn add_input(&mut self, v: f64) {
+            if v == -200.0 {
+                self.input.push(0.0);
+            } else {
+                self.input.push(v);
+            }
+        }
+        pub fn add_output(&mut self, v: f64) {
+            if v == -200.0 {
+                self.output.push(0.0);
+            } else {
+                self.output.push(v);
+            }
+        }
+    }
+
+    let mut reader = csv::Reader::from_path("data/AirQualityUCI.csv")?;
+    //  Duration::days(5)
+    let mut rec_datas: Vec<RecData> = vec![];
+    for record in reader.deserialize() {
+        let rec: Record = record?;
+        let datetime_str = format!("{} {}", rec.date, rec.time);
+        let datetime = Utc
+            .datetime_from_str(&datetime_str, "%-m/%-d/%Y %-H:%M:%S")
+            .unwrap();
+
+        let mut rec_data = RecData::new(datetime);
+        rec_data.add_input(rec.pt_s1 as f64);
+        rec_data.add_input(rec.pt_s2 as f64);
+        rec_data.add_input(rec.pt_s3 as f64);
+        rec_data.add_input(rec.pt_s4 as f64);
+        rec_data.add_input(rec.pt_s5 as f64);
+        rec_data.add_input(rec.temp);
+        rec_data.add_input(rec.rh);
+        rec_data.add_input(rec.ah);
+        rec_data.add_output(rec.benzene);
+        rec_datas.push(rec_data);
+    }
+    let mut datas_five: Vec<Data> = vec![];
+    let mut datas_ten: Vec<Data> = vec![];
+
+    for (i, x) in rec_datas.iter().enumerate() {
+        let next_five_days = x.datetime + Duration::days(5);
+        let next_ten_dats = x.datetime + Duration::days(10);
+
+        let inputs = &x.input;
+        let mut labels_five: Vec<f64> = vec![];
+        let mut labels_ten: Vec<f64> = vec![];
+
+        for y in &rec_datas[i..] {
+            if y.datetime == next_five_days {
+                labels_five = y.output.clone();
+            }
+            if y.datetime == next_ten_dats {
+                labels_ten = y.output.clone();
+                break;
+            }
+        }
+
+        if labels_five.len() == 0 && labels_ten.len() == 0 {
+            break;
+        }
+        if labels_five.len() != 0 {
+            datas_five.push(Data {
+                inputs: inputs.clone(),
+                labels: labels_five,
+            });
+        }
+        if labels_ten.len() != 0 {
+            datas_ten.push(Data {
+                inputs: inputs.clone(),
+                labels: labels_ten,
+            });
+        }
+    }
+    Ok((DataSet::new(datas_five), DataSet::new(datas_ten)))
 }
 
 #[cfg(test)]
