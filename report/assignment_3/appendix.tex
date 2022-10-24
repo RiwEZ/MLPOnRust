@@ -4,6 +4,26 @@
 \section*{Appendix}
 
 \begin{code}
+\caption{main.rs}
+\begin{minted}[fontsize=\footnotesize, bgcolor=bg, linenos]{rust}  
+    pub mod activator;
+    pub mod ga;
+    pub mod loss;
+    pub mod mlp;
+    pub mod models;
+    pub mod utills;
+    
+    use std::error::Error;
+    fn main() -> Result<(), Box<dyn Error>> {
+        models::wdbc::wdbc_30_15_1();
+        models::wdbc::wdbc_30_7_1();
+        models::wdbc::wdbc_30_15_7_1();
+        Ok(())
+    }
+\end{minted}
+\end{code}
+
+\begin{code}
 \caption{ga/mod.rs}
 \label{src:ga}
 \begin{minted}[fontsize=\footnotesize, bgcolor=bg, linenos]{rust}  
