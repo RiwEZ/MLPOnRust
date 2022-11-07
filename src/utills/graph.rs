@@ -356,9 +356,16 @@ pub fn draw_confustion(matrix_vec: Vec<[[i32; 2]; 2]>, path: String) -> Result<(
 pub fn draw_ga_progress(
     cv_fitness: &Vec<Vec<(i32, f64)>>,
     path: String,
+    max_y: f64,
 ) -> Result<(), Box<dyn Error>> {
     let root = BitMapBackend::new(&path, (2000, 1000)).into_drawing_area();
     root.fill(&WHITE)?;
+
+    let max_x = cv_fitness[0]
+        .iter()
+        .reduce(|m, x| if m.0 > x.0 { m } else { x })
+        .unwrap()
+        .0;
 
     // This is mostly hardcoded
     let drawing_areas = root.split_evenly((2, 5));
@@ -371,7 +378,7 @@ pub fn draw_ga_progress(
             .margin(40)
             .x_label_area_size(20)
             .y_label_area_size(20)
-            .build_cartesian_2d(0i32..200i32, 0.0..1.1)?;
+            .build_cartesian_2d(0i32..max_x, 0.0..max_y)?;
 
         chart
             .configure_mesh()

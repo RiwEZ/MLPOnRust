@@ -8,6 +8,27 @@ pub struct Loss {
 }
 
 impl Loss {
+    /// Absolute Error
+    pub fn abs_err() -> Loss {
+        fn func(output: f64, desired: f64) -> f64 {
+            (output - desired).abs()
+        }
+        fn der(output: f64, desired: f64) -> f64 {
+            if output > desired {
+                1.0
+            } else {
+                -1.0
+            }
+        }
+
+        Loss {
+            outputs: vec![],
+            desired: vec![],
+            func,
+            der,
+        }
+    }
+
     /// Squared Error
     pub fn square_err() -> Loss {
         fn func(output: f64, desired: f64) -> f64 {

@@ -124,6 +124,14 @@ impl DataSet {
         DataSet::new(datas)
     }
 
+    pub fn get_feature(&self, i: usize) -> Vec<f64> {
+        if i >= self.datas[0].inputs.len() {
+            panic!("i should not exceed inputs feature size");
+        }
+
+        self.datas.iter().map(|data| data.inputs[i]).collect()
+    }
+
     /// this could be implement to be cleaner but I'm lazy
     pub fn minmax_norm(&self, valid_set: &DataSet) -> (DataSet, DataSet) {
         // this is very not efficient
@@ -314,6 +322,7 @@ pub fn wdbc_dataset() -> Result<DataSet, Box<dyn Error>> {
     Ok(DataSet::new(datas))
 }
 
+/// Return `(desired = next five days, desired = next ten days)`
 pub fn airquality_dataset() -> Result<(DataSet, DataSet), Box<dyn Error>> {
     // nx is not used
     #[derive(Deserialize, Debug)]
@@ -346,54 +355,56 @@ pub fn airquality_dataset() -> Result<(DataSet, DataSet), Box<dyn Error>> {
         datetime: DateTime<Utc>,
         input: Vec<f64>,
         output: Vec<f64>,
+        pub okay: bool,
+    }
+    /// add to input if input is true else add to output
+    fn rec_add(recdata: &mut RecData, v: f64, input: bool) {
+        if v == -200.0 {
+            recdata.okay = false;
+        }
+        if input {
+            recdata.input.push(v);
+        } else {
+            recdata.output.push(v)
+        };
     }
 
     impl RecData {
-        pub fn new(datetime: DateTime<Utc>) -> RecData {
-            RecData {
+        pub fn new(record: &Record) -> RecData {
+            let datetime_str = format!("{} {}", record.date, record.time);
+            let datetime = Utc
+                .datetime_from_str(&datetime_str, "%-m/%-d/%Y %-H:%M:%S")
+                .unwrap();
+
+            let mut recdata = RecData {
                 datetime,
                 input: vec![],
                 output: vec![],
-            }
-        }
-        pub fn add_input(&mut self, v: f64) {
-            if v == -200.0 {
-                self.input.push(0.0);
-            } else {
-                self.input.push(v);
-            }
-        }
-        pub fn add_output(&mut self, v: f64) {
-            if v == -200.0 {
-                self.output.push(0.0);
-            } else {
-                self.output.push(v);
-            }
+                okay: true,
+            };
+            rec_add(&mut recdata, record.pt_s1 as f64, true);
+            rec_add(&mut recdata, record.pt_s2 as f64, true);
+            rec_add(&mut recdata, record.pt_s3 as f64, true);
+            rec_add(&mut recdata, record.pt_s4 as f64, true);
+            rec_add(&mut recdata, record.pt_s5 as f64, true);
+            rec_add(&mut recdata, record.temp, true);
+            rec_add(&mut recdata, record.rh, true);
+            rec_add(&mut recdata, record.ah, true);
+            rec_add(&mut recdata, record.benzene, false);
+            recdata
         }
     }
 
     let mut reader = csv::Reader::from_path("data/AirQualityUCI.csv")?;
-    //  Duration::days(5)
     let mut rec_datas: Vec<RecData> = vec![];
     for record in reader.deserialize() {
-        let rec: Record = record?;
-        let datetime_str = format!("{} {}", rec.date, rec.time);
-        let datetime = Utc
-            .datetime_from_str(&datetime_str, "%-m/%-d/%Y %-H:%M:%S")
-            .unwrap();
-
-        let mut rec_data = RecData::new(datetime);
-        rec_data.add_input(rec.pt_s1 as f64);
-        rec_data.add_input(rec.pt_s2 as f64);
-        rec_data.add_input(rec.pt_s3 as f64);
-        rec_data.add_input(rec.pt_s4 as f64);
-        rec_data.add_input(rec.pt_s5 as f64);
-        rec_data.add_input(rec.temp);
-        rec_data.add_input(rec.rh);
-        rec_data.add_input(rec.ah);
-        rec_data.add_output(rec.benzene);
-        rec_datas.push(rec_data);
+        let rec_data = RecData::new(&record.unwrap());
+        if rec_data.okay {
+            rec_datas.push(rec_data)
+        };
     }
+
+    //  Duration::days(5)
     let mut datas_five: Vec<Data> = vec![];
     let mut datas_ten: Vec<Data> = vec![];
 
@@ -401,7 +412,6 @@ pub fn airquality_dataset() -> Result<(DataSet, DataSet), Box<dyn Error>> {
         let next_five_days = x.datetime + Duration::days(5);
         let next_ten_dats = x.datetime + Duration::days(10);
 
-        let inputs = &x.input;
         let mut labels_five: Vec<f64> = vec![];
         let mut labels_ten: Vec<f64> = vec![];
 
@@ -420,13 +430,13 @@ pub fn airquality_dataset() -> Result<(DataSet, DataSet), Box<dyn Error>> {
         }
         if labels_five.len() != 0 {
             datas_five.push(Data {
-                inputs: inputs.clone(),
+                inputs: x.input.clone(),
                 labels: labels_five,
             });
         }
         if labels_ten.len() != 0 {
             datas_ten.push(Data {
-                inputs: inputs.clone(),
+                inputs: x.input.clone(),
                 labels: labels_ten,
             });
         }
@@ -436,28 +446,24 @@ pub fn airquality_dataset() -> Result<(DataSet, DataSet), Box<dyn Error>> {
 
 #[cfg(test)]
 mod tests {
+    use plotters::prelude::*;
+
     use super::*;
 
     #[test]
-    fn temp_test() -> Result<(), Box<dyn Error>> {
-        let dt = wdbc_dataset()?;
-        println!("{:?}", dt.get_datas()[0].inputs.len());
+    fn test_airquality() -> Result<(), Box<dyn Error>> {
+        let (dt5, _) = airquality_dataset().unwrap();
+        
+        let dt = &dt5.cross_valid_set(0.1)[0];
+        let (train, _) = dt.0.minmax_norm(&dt.1);
 
-        /*
-        let dt = flood_dataset()?.cross_valid_set(0.1);
-        let training_set = &dt[0].0;
-        let validation_set = &dt[0].1;
-
-        println!("mean: {}, std: {}", validation_set.mean(), validation_set.std());
-        println!("\n{:?}", validation_set.get_datas());
-        println!("\n\n{:?}", standardization(validation_set).get_datas());
-         */
-
-        /*
-        if let Ok(dt) = cross_dataset() {
-            println!("{:?}", dt.get_datas());
+        for dt in train.get_datas().iter() {
+            for v in dt.inputs.iter() {
+                print!("{:.3e} ", v);
+            }
+            print!("{:.3e}\n", dt.labels[0]);
         }
-        */
+        println!("{}", train.len());
         Ok(())
     }
 

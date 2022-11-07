@@ -142,6 +142,28 @@ impl Net {
         Net::from_layers(layers)
     }
 
+    /// Set this network parameters from flattened parameters.
+    pub fn set_params(&mut self, params: &Vec<f64>) {
+        if self.parameters != params.len() as u64 {
+            panic!["The neural network parameters size is not equal to individual size"];
+        }
+        let mut idx: usize = 0;
+
+        for l in self.layers.iter_mut() {
+            l.w.iter_mut().for_each(|w_j| {
+                w_j.iter_mut().for_each(|w_ji| {
+                    *w_ji = params[idx];
+                    idx += 1;
+                })
+            });
+
+            l.b.iter_mut().for_each(|b_i| {
+                *b_i = params[idx];
+                idx += 1;
+            });
+        }
+    }
+
     pub fn zero_grad(&mut self) {
         for l in 0..self.layers.len() {
             self.layers[l].zero_grad();
@@ -213,5 +235,18 @@ mod tests {
         assert_eq!(linear.outputs[1], 3.0);
         assert_eq!(result[0], 0.8807970779778823);
         assert_eq!(result[1], 0.9525741268224334);
+    }
+
+    #[test]
+    fn test_set_params() {
+        let mut layers: Vec<Layer> = vec![];
+        layers.push(Layer::new(2, 2, 1.0, activator::relu()));
+        layers.push(Layer::new(2, 1, 1.0, activator::linear()));
+        let mut net = Net::from_layers(layers);
+        net.set_params(&vec![1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 1.0, 1.0, 2.0]);
+
+        assert_eq!(net.layers[0].w[0], vec![1.0, 1.0]);
+        assert_eq!(net.layers[0].w[1], vec![1.0, 1.0]);
+        assert_eq!(net.layers[0].b, vec![2.0, 2.0]);
     }
 }

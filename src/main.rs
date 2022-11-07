@@ -3,14 +3,17 @@ pub mod ga;
 pub mod loss;
 pub mod mlp;
 pub mod models;
+pub mod swarm;
 pub mod utills;
 
 use std::error::Error;
 
 fn main() -> Result<(), Box<dyn Error>> {
+    models::airquality::air_8_4_1();
+
     //models::wdbc::wdbc_30_15_1();
     //models::wdbc::wdbc_30_7_1();
-    models::wdbc::wdbc_30_15_7_1();
+    //models::wdbc::wdbc_30_15_7_1();
 
     /*
     // training code

@@ -7,7 +7,7 @@ use crate::{
     mlp::{self, Layer, Net},
     utills::{
         data::{self, confusion_count},
-        graph, io,
+        graph,
     },
 };
 
@@ -143,6 +143,7 @@ pub fn wdbc_ga(model: &dyn Fn() -> Net, folder: &str, imgpath: &str) -> Result<(
     graph::draw_ga_progress(
         &train_proc,
         format!("{}/{}/train_proc.png", imgpath, folder),
+        1.1,
     )?;
 
     Ok(())
