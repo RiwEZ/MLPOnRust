@@ -4,7 +4,10 @@ use crate::{
     activator, loss,
     mlp::{Layer, Net},
     swarm::{self, gen_rho},
-    utills::{data, graph, io},
+    utills::{
+        data::{self, mean},
+        graph, io,
+    },
 };
 
 const IMGPATH: &str = "img";
@@ -12,8 +15,8 @@ const IMGPATH: &str = "img";
 pub fn air_8_4_1() {
     fn model() -> Net {
         let mut layers: Vec<Layer> = vec![];
-        layers.push(Layer::new(8, 8, 1.0, activator::relu()));
-        layers.push(Layer::new(8, 1, 1.0, activator::linear()));
+        layers.push(Layer::new(8, 4, 1.0, activator::relu()));
+        layers.push(Layer::new(4, 1, 1.0, activator::linear()));
         Net::from_layers(layers)
     }
     air_particle_swarm(&model);
@@ -23,12 +26,9 @@ pub fn air_particle_swarm(model: &dyn Fn() -> Net) {
     let (dataset_five, dataset_ten) =
         data::airquality_dataset().expect("Something wrong with airquality_dataset");
     let mut loss = loss::Loss::abs_err();
-    let max_epoch = 200;
+    let max_epoch = 100;
 
-    let mut train_proc: Vec<Vec<(i32, f64)>> = Vec::with_capacity(10);
-    for _ in 0..10 {
-        train_proc.push(vec![]);
-    }
+    let mut train_proc: Vec<Vec<(i32, f64)>> = (0..10).into_iter().map(|_| vec![]).collect();
 
     let start = Instant::now();
     // five day predictor
@@ -40,10 +40,7 @@ pub fn air_particle_swarm(model: &dyn Fn() -> Net) {
         let (training_set, validation_set) = dt.0.minmax_norm(&dt.1);
 
         let mut net = model();
-        //let mut particles = swarm::init_particles(&net, 20);
-        //let mut gbest = particles[0].clone();
-
-        let mut groups = swarm::init_particles_group(&net, 20, 4);
+        let mut groups = swarm::init_particles_group(&net, 5, 4);
 
         for i in 0..max_epoch {
             for (k, g) in groups.iter_mut().enumerate() {
@@ -59,39 +56,65 @@ pub fn air_particle_swarm(model: &dyn Fn() -> Net) {
                         x.f = mae;
                         x.best_pos = x.position.clone();
                     }
-                    if mae < g.lbest.f {
-                        g.lbest.f = mae; // set gbest
-                        g.lbest.best_pos = x.position.clone();
+                    if mae < g.lbest_f {
+                        g.lbest_f = mae; // set gbest
+                        g.lbest_pos = x.position.clone();
                     }
-                    x.update_speed(&g.lbest, gen_rho(1.0), gen_rho(1.5));
+                    x.update_speed(&g.lbest_pos, gen_rho(1.0), gen_rho(1.5));
                     x.change_pos();
                     train_proc[j].push((i, x.f));
                 }
-                println!("{}, {} lbest : {:.5e}", k, i, g.lbest.f);
+                println!("{}, {} lbest : {:.5e}", k, i, g.lbest_f);
             }
         }
 
-        let gbest = &groups
+        let best_group = &groups
             .iter()
-            .reduce(|best, x| if best.lbest.f < x.lbest.f { best } else { x })
-            .unwrap()
-            .lbest;
+            .reduce(|best, x| if best.lbest_f < x.lbest_f { best } else { x })
+            .unwrap();
 
-        net.set_params(&gbest.position);
+        let gbest = best_group
+            .particles
+            .iter()
+            .reduce(|best, ind| if best.f < ind.f { best } else { ind })
+            .unwrap();
+
+        net.set_params(&gbest.best_pos);
         io::save(&net.layers, "models/air/air-8-4-1.json".into()).unwrap();
 
-        let mut run_loss = 0.0;
+        let mut mae = 0.0;
+        let mut mse = 0.0;
+        let mut rscore_divider = 0.0;
+        let v_mean = mean(&validation_set.get_label(0));
+        let mut mape = 0.0;
+
         for data in validation_set.get_datas() {
             let result = net.forward(&data.inputs);
-            let loss = loss.criterion(&result, &data.labels);
-            run_loss += loss;
+
+            let abs_err = loss.criterion(&result, &data.labels);
+            mae += abs_err;
+            mape += abs_err / data.labels[0];
+            let sqr_err = loss::Loss::square_err().criterion(&result, &data.labels);
+            mse += sqr_err;
+            rscore_divider += (data.labels[0] - v_mean).powi(2);
+
             println!(
                 "predict: {:.3}, real: {:.3}, loss: {:.3}",
-                result[0], &data.labels[0], loss
+                result[0], &data.labels[0], abs_err
             );
         }
-        let mae = run_loss / validation_set.len() as f64;
-        println!("validation MAE : {:.5}, with gbest f = {}", mae, gbest.f);
+        let rscore = 1.0 - (mse / rscore_divider);
+        mape = mape / validation_set.len() as f64;
+        mae = mae / validation_set.len() as f64;
+        mse = mse / validation_set.len() as f64;
+        println!(
+            "validation MAE : {:.3}, rmse: {:.3}, rscore: {:.3}, mape: {:.3}, with gbest f = {:.3}",
+            mae,
+            mse.sqrt(),
+            rscore,
+            mape,
+            gbest.f
+        );
     }
     let duration = start.elapsed();
     println!("Time used: {:.3} sec", duration.as_secs_f32());

@@ -53,7 +53,7 @@ pub fn flood_fit(
     folder: &str,
     standardize: bool,
 ) -> Result<(), Box<dyn Error>> {
-    let (models, img) = utills::io::check_dir(folder)?;
+    let (models, img) = ("", "img");
 
     let dataset = data::flood_dataset()?;
     let mut loss = loss::Loss::square_err();
@@ -70,16 +70,10 @@ pub fn flood_fit(
         let mut net = model();
 
         // get training set and validation set
-        let training_set = if standardize {
-            dt.0.standardization()
+        let (training_set, validation_set) = if standardize {
+            dt.0.standardization(&dt.1)
         } else {
-            dt.0.clone()
-        };
-
-        let validation_set = if standardize {
-            dt.1.standardization()
-        } else {
-            dt.1.clone()
+            (dt.0.clone(), dt.1.clone())
         };
         //let training_set = data::minmax_norm(&dt.0, dt.0.min(), dt.0.max());
         //let validation_set = data::minmax_norm(&dt.1, dt.1.min(), dt.1.max());

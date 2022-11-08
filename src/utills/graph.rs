@@ -2,6 +2,8 @@ use plotters::coord::Shift;
 use plotters::prelude::*;
 use std::error::Error;
 
+use super::data::max;
+
 const FONT: &str = "Roboto Mono";
 const CAPTION: i32 = 70;
 const SERIE_LABEL: i32 = 32;
@@ -190,7 +192,7 @@ pub fn draw_acc_2hist(
         .x_label_area_size(70)
         .y_label_area_size(90)
         .build_cartesian_2d((1..n as u32).into_segmented(), 0.0..1.0)?
-        .set_secondary_coord(0.0..n, 0.0..1.0);
+        .set_secondary_coord(0.0..n, 0.0..max(datas[0]).max(max(datas[1])));
 
     chart
         .configure_mesh()

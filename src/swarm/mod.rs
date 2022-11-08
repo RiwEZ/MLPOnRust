@@ -34,14 +34,14 @@ impl Individual {
     }
 
     /// Speed updator with social component included
-    pub fn update_speed(&mut self, other_best: &Individual, rho1: f64, rho2: f64) {
+    pub fn update_speed(&mut self, other_best: &Vec<f64>, rho1: f64, rho2: f64) {
         let w = 1.0;
         self.speed
             .iter_mut()
             .zip(
                 self.position
                     .iter()
-                    .zip(self.best_pos.iter().zip(other_best.best_pos.iter())),
+                    .zip(self.best_pos.iter().zip(other_best.iter())),
             )
             .for_each(|(v, (x, (x_b, x_gb)))| {
                 *v = w * *v + rho1 * (*x_b - *x) + rho2 * (*x_gb - *x);
@@ -89,18 +89,11 @@ pub fn init_particles(net: &Net, amount: u32) -> Vec<Individual> {
 
 pub struct IndividualGroup {
     pub particles: Vec<Individual>,
-    pub lbest: Individual,
+    pub lbest_f: f64,
+    pub lbest_pos: Vec<f64>,
 }
 
 impl IndividualGroup {
-    /// Provide an example to construct individual
-    pub fn new(example: &Individual) -> IndividualGroup {
-        IndividualGroup {
-            particles: vec![],
-            lbest: example.clone(),
-        }
-    }
-
     pub fn add(&mut self, individual: Individual) {
         self.particles.push(individual);
     }
@@ -113,7 +106,8 @@ pub fn init_particles_group(net: &Net, group: usize, group_size: u32) -> Vec<Ind
             let particles = init_particles(&net, group_size + 1);
             IndividualGroup {
                 particles: particles[1..].into(),
-                lbest: particles[0].clone(),
+                lbest_f: f64::MAX,
+                lbest_pos: particles[0].position.clone(),
             }
         })
         .collect()
@@ -135,7 +129,7 @@ mod tests {
         p1.f = 4.0;
         p1.speed = vec![0.5, 0.5];
 
-        let gbest = Individual::new(vec![0.5, 1.0]);
+        let gbest = vec![0.5, 1.0];
 
         // trainning
         let eval_result = f(&p1.position);

@@ -1,5 +1,5 @@
 use super::io::read_lines;
-use chrono::{Date, DateTime, Duration, TimeZone, Utc};
+use chrono::{DateTime, Duration, TimeZone, Utc};
 use rand::prelude::SliceRandom;
 use serde::Deserialize;
 use std::error::Error;
@@ -88,40 +88,90 @@ impl DataSet {
         data_points
     }
 
-    pub fn max(&self) -> f64 {
-        max(&self.data_points())
-    }
-
-    pub fn min(&self) -> f64 {
-        min(&self.data_points())
-    }
-
-    pub fn std(&self) -> f64 {
-        std(&self.data_points(), self.mean())
-    }
-
-    pub fn mean(&self) -> f64 {
-        mean(&self.data_points())
-    }
-
     pub fn len(&self) -> usize {
         self.datas.len()
     }
 
-    pub fn standardization(&self) -> DataSet {
-        // this kind of wrong
-        let mean = self.mean();
-        let std = self.std();
-        let datas: Vec<Data> = self
-            .get_datas()
+    pub fn standardization(&self, valid_set: &DataSet) -> (DataSet, DataSet) {
+        let size = self.datas[0].inputs.len();
+        let features: Vec<(Vec<f64>, Vec<f64>)> = (0..size)
             .into_iter()
-            .map(|dt| {
-                let inputs: Vec<f64> = standardization(&dt.inputs, mean, std);
-                let labels: Vec<f64> = standardization(&dt.labels, mean, std);
-                Data { inputs, labels }
+            .map(|i| {
+                let feature = self.get_feature(i);
+                let v_feature = valid_set.get_feature(i);
+                let mean = mean(&feature);
+                let std = std(&feature, mean);
+                (
+                    standardization(&feature, mean, std),
+                    standardization(&v_feature, mean, std),
+                )
             })
             .collect();
-        DataSet::new(datas)
+
+        let datas: Vec<Data> = self
+            .datas
+            .iter()
+            .enumerate()
+            .map(|(i, dt)| Data {
+                labels: dt.labels.clone(),
+                inputs: features.iter().map(|x| x.0[i]).collect(),
+            })
+            .collect();
+
+        let v_datas: Vec<Data> = valid_set
+            .datas
+            .iter()
+            .enumerate()
+            .map(|(i, dt)| Data {
+                labels: dt.labels.clone(),
+                inputs: features.iter().map(|x| x.1[i]).collect(),
+            })
+            .collect();
+
+        (DataSet::new(datas), DataSet::new(v_datas))
+    }
+
+    pub fn minmax_norm(&self, valid_set: &DataSet) -> (DataSet, DataSet) {
+        let size = self.datas[0].inputs.len();
+        let features: Vec<(Vec<f64>, Vec<f64>)> = (0..size)
+            .into_iter()
+            .map(|i| {
+                let feature = self.get_feature(i);
+                let v_feature = valid_set.get_feature(i);
+                let min = min(&feature);
+                let max = max(&feature);
+                (
+                    minmax_norm(&feature, min, max),
+                    minmax_norm(&v_feature, min, max),
+                )
+            })
+            .collect();
+
+        let datas: Vec<Data> = self
+            .datas
+            .iter()
+            .enumerate()
+            .map(|(i, dt)| Data {
+                labels: dt.labels.clone(),
+                inputs: features.iter().map(|x| x.0[i]).collect(),
+            })
+            .collect();
+
+        let v_datas: Vec<Data> = valid_set
+            .datas
+            .iter()
+            .enumerate()
+            .map(|(i, dt)| Data {
+                labels: dt.labels.clone(),
+                inputs: features.iter().map(|x| x.1[i]).collect(),
+            })
+            .collect();
+
+        (DataSet::new(datas), DataSet::new(v_datas))
+    }
+
+    pub fn get_datas(&self) -> Vec<Data> {
+        self.datas.clone()
     }
 
     pub fn get_feature(&self, i: usize) -> Vec<f64> {
@@ -132,64 +182,12 @@ impl DataSet {
         self.datas.iter().map(|data| data.inputs[i]).collect()
     }
 
-    /// this could be implement to be cleaner but I'm lazy
-    pub fn minmax_norm(&self, valid_set: &DataSet) -> (DataSet, DataSet) {
-        // this is very not efficient
-        let size = self.datas[0].inputs.len();
-        let mut features: Vec<Vec<f64>> = Vec::with_capacity(size);
-        let mut v_features: Vec<Vec<f64>> = Vec::with_capacity(size);
-
-        for _ in 0..size {
-            features.push(vec![]);
-            v_features.push(vec![]);
-        }
-        for dt in self.datas.iter() {
-            for (f, x) in features.iter_mut().zip(dt.inputs.iter()) {
-                f.push(*x);
-            }
-        }
-        for v_dt in valid_set.datas.iter() {
-            for (vf, vx) in v_features.iter_mut().zip(v_dt.inputs.iter()) {
-                vf.push(*vx);
-            }
-        }
-        for (f, vf) in features.iter_mut().zip(v_features.iter_mut()) {
-            let (min, max) = (min(f), max(f));
-            *f = minmax_norm(f, min, max);
-            *vf = minmax_norm(vf, min, max);
+    pub fn get_label(&self, i: usize) -> Vec<f64> {
+        if i >= self.datas[0].labels.len() {
+            panic!("i should not exceed inputs feature size");
         }
 
-        let datas: Vec<Data> = self
-            .datas
-            .iter()
-            .enumerate()
-            .map(|(i, dt)| {
-                let inputs: Vec<f64> = features.iter().map(|x| x[i]).collect();
-                Data {
-                    labels: dt.labels.clone(),
-                    inputs,
-                }
-            })
-            .collect();
-
-        let v_datas: Vec<Data> = valid_set
-            .datas
-            .iter()
-            .enumerate()
-            .map(|(i, dt)| {
-                let inputs: Vec<f64> = v_features.iter().map(|x| x[i]).collect();
-                Data {
-                    labels: dt.labels.clone(),
-                    inputs,
-                }
-            })
-            .collect();
-
-        (DataSet::new(datas), DataSet::new(v_datas))
-    }
-
-    pub fn get_datas(&self) -> Vec<Data> {
-        self.datas.clone()
+        self.datas.iter().map(|data| data.labels[i]).collect()
     }
 
     pub fn get_shuffled(&self) -> Vec<Data> {
@@ -446,14 +444,12 @@ pub fn airquality_dataset() -> Result<(DataSet, DataSet), Box<dyn Error>> {
 
 #[cfg(test)]
 mod tests {
-    use plotters::prelude::*;
-
     use super::*;
 
     #[test]
     fn test_airquality() -> Result<(), Box<dyn Error>> {
         let (dt5, _) = airquality_dataset().unwrap();
-        
+
         let dt = &dt5.cross_valid_set(0.1)[0];
         let (train, _) = dt.0.minmax_norm(&dt.1);
 
@@ -468,10 +464,33 @@ mod tests {
     }
 
     #[test]
-    fn test_min_max() -> Result<(), Box<dyn Error>> {
-        let dt = flood_dataset()?;
-        assert_eq!(dt.max(), 628.0);
-        assert_eq!(dt.min(), 95.0);
-        Ok(())
+    fn test_minmax_norm() {
+        let datas: Vec<Data> = (0..=10)
+            .into_iter()
+            .map(|i| Data {
+                labels: vec![0.0],
+                inputs: vec![i as f64 * 10.0],
+            })
+            .collect();
+        let v_datas: Vec<Data> = (0..=10)
+            .into_iter()
+            .map(|i| Data {
+                labels: vec![0.0],
+                inputs: vec![i as f64 * 5.0],
+            })
+            .collect();
+
+        let (t, v) = DataSet::new(datas).minmax_norm(&DataSet::new(v_datas));
+
+        let expected = vec![0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0];
+        for (i, x) in t.get_feature(0).iter().enumerate() {
+            assert_eq!(*x, expected[i]);
+        }
+        let v_expected = vec![
+            0.0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50,
+        ];
+        for (i, x) in v.get_feature(0).iter().enumerate() {
+            assert_eq!(*x, v_expected[i])
+        }
     }
 }

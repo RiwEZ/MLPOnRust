@@ -15,13 +15,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     //models::wdbc::wdbc_30_7_1();
     //models::wdbc::wdbc_30_15_7_1();
 
-    /*
     // training code
-    flood::flood_8_4_1(0.01, 0.01, "flood-8-4-1", true)?; // 1
+
+    /*
+    //models::flood::flood_8_4_1(0.01, 0.01, "flood-8-4-1", true)?; // 1
     flood::flood_8_4_1(0.01, 0.0, "flood-8-4-1_2", true)?; // 2
     flood::flood_8_4_1(0.0001, 0.01, "flood-8-4-1_3", true)?; // 3
     flood::flood_8_4_1(0.01, 0.01, "flood-8-4-1_4", false)?; // 4
-    flood::flood_8_8_1(0.01, 0.01, "flood-8-8-1")?;
+    models::flood::flood_8_8_1(0.01, 0.01, "flood-8-8-1")?;
     cross::cross_2_4_1(0.01, 0.01, "cross-2-4-1")?;
     cross::cross_2_4_1(0.01, 0.0, "cross-2-4-1_2")?;
     cross::cross_2_4_1(0.0001, 0.01, "cross-2-4-1_3")?;
