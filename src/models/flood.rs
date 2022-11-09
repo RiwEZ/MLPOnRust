@@ -145,14 +145,14 @@ pub fn flood_fit(
 
     loss_g.draw(format!("{}/loss.png", img))?;
 
-    graph::draw_acc_2hist(
+    graph::hist::draw_acc_2hist(
         [&mse_to_rmse(&cv_valid_loss), &mse_to_rmse(&cv_train_loss)],
         "Validation/Training RMSE",
         ("Iterations", "Validataion/Training RMSE"),
         format!("{}/cv_l.png", img),
     )?;
 
-    graph::draw_acc_hist(
+    graph::hist::draw_acc_hist(
         &r2_score,
         "Cross Validation R2 Scores",
         ("Iterations", "R2 Scores"),

@@ -5,12 +5,12 @@ use crate::{
     mlp::{Layer, Net},
     swarm::{self, gen_rho},
     utills::{
-        data::{self, mean},
-        graph, io,
+        data::{self, mean, DataSet},
+        graph,
     },
 };
 
-const IMGPATH: &str = "img";
+const IMGPATH: &str = "report/assignment_4/images";
 
 pub fn air_8_4_1() {
     fn model() -> Net {
@@ -19,24 +19,57 @@ pub fn air_8_4_1() {
         layers.push(Layer::new(4, 1, 1.0, activator::linear()));
         Net::from_layers(layers)
     }
-    air_particle_swarm(&model);
+    air_particle_swarm(&model, "air-8-4-1");
 }
 
-pub fn air_particle_swarm(model: &dyn Fn() -> Net) {
-    let (dataset_five, dataset_ten) =
-        data::airquality_dataset().expect("Something wrong with airquality_dataset");
+pub fn air_8_1_1() {
+    fn model() -> Net {
+        let mut layers: Vec<Layer> = vec![];
+        layers.push(Layer::new(8, 1, 1.0, activator::relu()));
+        layers.push(Layer::new(1, 1, 1.0, activator::linear()));
+        Net::from_layers(layers)
+    }
+    air_particle_swarm(&model, "air-8-1-1");
+}
+
+pub fn air_8_8_4_1() {
+    fn model() -> Net {
+        let mut layers: Vec<Layer> = vec![];
+        layers.push(Layer::new(8, 8, 1.0, activator::relu()));
+        layers.push(Layer::new(8, 4, 1.0, activator::relu()));
+        layers.push(Layer::new(4, 1, 1.0, activator::linear()));
+        Net::from_layers(layers)
+    }
+    air_particle_swarm(&model, "air-8-8-4-1");
+}
+
+pub fn validation_test(net: &mut Net, validation_set: &DataSet, training_set: &DataSet) -> (f64, f64) {
+    let mut mae = 0.0;
+    for data in validation_set.get_datas() {
+        let result = net.forward(&data.inputs);
+        let abs_err = loss::Loss::abs_err().criterion(&result, &data.labels);
+        mae += abs_err;
+    }
+    mae = mae / validation_set.len() as f64;
+
+    let mut t_mae = 0.0;
+    for data in training_set.get_datas() {
+        let result = net.forward(&data.inputs);
+        let abs_err = loss::Loss::abs_err().criterion(&result, &data.labels);
+        t_mae += abs_err;
+    }
+    (mae, t_mae/training_set.len() as f64)
+}
+
+pub fn pso_fit(model: &dyn Fn() -> Net, dataset: &DataSet, folder: String) -> f32 {
     let mut loss = loss::Loss::abs_err();
     let max_epoch = 100;
-
     let mut train_proc: Vec<Vec<(i32, f64)>> = (0..10).into_iter().map(|_| vec![]).collect();
+    let mut valid_mae: Vec<f64> = vec![];
+    let mut train_mae: Vec<f64> = vec![];
 
     let start = Instant::now();
-    // five day predictor
-    for (j, dt) in dataset_five.cross_valid_set(0.1).iter().enumerate() {
-        if j > 0 {
-            break;
-        }
-
+    for (j, dt) in dataset.cross_valid_set(0.1).iter().enumerate() {
         let (training_set, validation_set) = dt.0.minmax_norm(&dt.1);
 
         let mut net = model();
@@ -80,43 +113,38 @@ pub fn air_particle_swarm(model: &dyn Fn() -> Net) {
             .unwrap();
 
         net.set_params(&gbest.best_pos);
-        io::save(&net.layers, "models/air/air-8-4-1.json".into()).unwrap();
-
-        let mut mae = 0.0;
-        let mut mse = 0.0;
-        let mut rscore_divider = 0.0;
-        let v_mean = mean(&validation_set.get_label(0));
-        let mut mape = 0.0;
-
-        for data in validation_set.get_datas() {
-            let result = net.forward(&data.inputs);
-
-            let abs_err = loss.criterion(&result, &data.labels);
-            mae += abs_err;
-            mape += abs_err / data.labels[0];
-            let sqr_err = loss::Loss::square_err().criterion(&result, &data.labels);
-            mse += sqr_err;
-            rscore_divider += (data.labels[0] - v_mean).powi(2);
-
-            println!(
-                "predict: {:.3}, real: {:.3}, loss: {:.3}",
-                result[0], &data.labels[0], abs_err
-            );
-        }
-        let rscore = 1.0 - (mse / rscore_divider);
-        mape = mape / validation_set.len() as f64;
-        mae = mae / validation_set.len() as f64;
-        mse = mse / validation_set.len() as f64;
-        println!(
-            "validation MAE : {:.3}, rmse: {:.3}, rscore: {:.3}, mape: {:.3}, with gbest f = {:.3}",
-            mae,
-            mse.sqrt(),
-            rscore,
-            mape,
-            gbest.f
-        );
+        //io::save(&net.layers, "models/air/air-8-4-1.json".into()).unwrap();
+        let (v_mae, t_mae) = validation_test(&mut net, &validation_set, &training_set);   
+        valid_mae.push(v_mae);
+        train_mae.push(t_mae);
     }
+
     let duration = start.elapsed();
-    println!("Time used: {:.3} sec", duration.as_secs_f32());
-    graph::draw_ga_progress(&train_proc, format!("img/train_proc.png"), 12.0).unwrap();
+    
+    graph::draw_ga_progress(
+        &train_proc,
+        format!("{}/{}/train_proc.png", IMGPATH, folder),
+        12.0,
+    )
+    .unwrap();
+
+    graph::hist::draw_2hist(
+        [&valid_mae, &train_mae],
+        "Validation/Training MAE",
+        ("Iteration", "Validation/Training MAE"),
+        format!("{}/{}/mae.png", IMGPATH, folder),
+    ).unwrap();
+
+    duration.as_secs_f32()
 }
+
+pub fn air_particle_swarm(model: &dyn Fn() -> Net, folder: &str) {
+    let (dataset_five, dataset_ten) =
+        data::airquality_dataset().expect("Something wrong with airquality_dataset");
+
+    let t1 = pso_fit(model, &dataset_five, format!("5days/{}", folder));
+    let t2 = pso_fit(model, &dataset_ten, format!("10days/{}", folder));
+
+    println!("t1: {:.3} sec, t2: {:.3} sec", t1, t2);
+}
+

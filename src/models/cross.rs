@@ -121,7 +121,7 @@ pub fn cross_fit(
 
     loss_g.draw(format!("{}/loss.png", img))?;
 
-    graph::draw_acc_2hist(
+    graph::hist::draw_acc_2hist(
         [&valid_acc, &train_acc],
         "Validation/Training Accuracy",
         ("Iterations", "Validataion/Training Accuracy"),

@@ -133,7 +133,7 @@ pub fn wdbc_ga(model: &dyn Fn() -> Net, folder: &str, imgpath: &str) -> Result<(
     let duration = start.elapsed();
     println!("Time used: {:.3} sec", duration.as_secs_f32());
 
-    graph::draw_acc_2hist(
+    graph::hist::draw_acc_2hist(
         [&valid_acc, &train_acc],
         "Training & Validation Accuray",
         ("Iterations", "Accuracy"),
