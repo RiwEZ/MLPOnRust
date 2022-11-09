@@ -5,7 +5,7 @@ use crate::{
     mlp::{Layer, Net},
     swarm::{self, gen_rho},
     utills::{
-        data::{self, mean, DataSet},
+        data::{self, DataSet},
         graph,
     },
 };
